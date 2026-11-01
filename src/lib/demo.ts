@@ -67,5 +67,106 @@ export function createDemo(today: string): Workspace {
       url: '',
     },
   ];
+  const base = {
+    time: '19:15',
+    session: 'london' as const,
+    account: 'demo' as const,
+    status: 'closed' as const,
+    size: '0.01 lots',
+    risk: 20,
+    fees: 1,
+    emotion: 'Calm',
+    followedPlan: 'yes' as const,
+    grade: 'A' as const,
+    mistakes: [] as string[],
+    rulesChecked: [] as string[],
+    thesis: 'Sample: retest of prior high with a clear invalidation.',
+    review: 'Sample entry. Executed the plan.',
+    attachments: [],
+  };
+  const sample = (
+    index: number,
+    daysAgo: number,
+    symbol: string,
+    direction: 'long' | 'short',
+    setup: string,
+    netPnl: number,
+    extra = {},
+  ) => ({
+    ...base,
+    id: `demo-trade-${index}`,
+    date: addDays(today, -daysAgo),
+    symbol,
+    direction,
+    setup,
+    netPnl,
+    entry: 2700,
+    exit: 2710,
+    stop: direction === 'long' ? 2690 : 2710,
+    target: direction === 'long' ? 2720 : 2680,
+    ...extra,
+  });
+  data.trades = [
+    sample(1, 8, 'XAUUSD', 'long', 'Break and retest', 38),
+    sample(2, 7, 'BTC', 'short', 'Range rejection', -21, {
+      emotion: 'FOMO',
+      followedPlan: 'no',
+      grade: 'C',
+      mistakes: ['Chased entry'],
+    }),
+    sample(3, 6, 'XAUUSD', 'long', 'Break and retest', 44),
+    sample(4, 4, 'ETH', 'long', 'Trend pullback', -19, { mistakes: ['Entered early'], grade: 'B' }),
+    sample(5, 3, 'XAUUSD', 'short', 'Range rejection', 26, { session: 'newyork' }),
+    sample(6, 1, 'XAUUSD', 'long', 'Break and retest', -41, {
+      emotion: 'Rushed',
+      followedPlan: 'no',
+      grade: 'C',
+      mistakes: ['Oversized', 'No setup'],
+      review: '',
+    }),
+    {
+      ...sample(7, 0, 'BTC', 'long', 'Trend pullback', 0),
+      status: 'open' as const,
+      netPnl: null,
+      exit: null,
+      followedPlan: 'unset' as const,
+      review: '',
+      grade: '' as const,
+    },
+  ];
+  data.urges = [
+    {
+      id: 'demo-urge-1',
+      at: `${addDays(today, -1)}T15:30:00.000Z`,
+      date: addDays(today, -1),
+      habit: 'smoking',
+      intensity: 4,
+      trigger: 'Lost a trade',
+      note: '',
+      outcome: 'resisted',
+    },
+    {
+      id: 'demo-urge-2',
+      at: `${addDays(today, -2)}T17:30:00.000Z`,
+      date: addDays(today, -2),
+      habit: 'abstinence',
+      intensity: 3,
+      trigger: 'Late night',
+      note: '',
+      outcome: 'resisted',
+    },
+  ];
+  data.applications = [
+    {
+      id: 'demo-app-1',
+      company: 'Northwind Labs',
+      role: 'Frontend developer',
+      url: '',
+      status: 'applied',
+      appliedOn: addDays(today, -3),
+      followUp: today,
+      notes: 'Sample. Follow up with the recruiter.',
+    },
+  ];
   return data;
 }

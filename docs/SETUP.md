@@ -1,6 +1,6 @@
 # Connect your private Journal26
 
-The `/demo` route is a separate browser-local sandbox. It is not password-protected cloud storage. Real journal entries live behind `/journal` and Supabase authentication. No sample entries are created for a new cloud account.
+Real journal entries live behind `/journal` and Supabase authentication. No sample entries are created for a new cloud account. The browser-local `/demo` sandbox only exists until Supabase is configured; after that it redirects to the journal, so real entries cannot land there by accident.
 
 ## 1. Create a Supabase project
 
@@ -18,6 +18,8 @@ Copy `.env.example` to `.env.local` and replace both values:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
+
+The app also accepts `NEXT_PUBLIC_SUPABASE_ANON_KEY` in place of the publishable key name.
 
 Then run:
 
@@ -46,13 +48,13 @@ Supabase's built-in email sender has restricted recipients and rate limits. For 
 - Images are in a private bucket, with paths starting with the owner's user ID. Viewing uses temporary signed URLs valid for one hour. Do not share those URLs.
 - No service-role key is required by the app. Never disable RLS or make the image bucket public.
 - Supabase authentication establishes account-level access; this is not end-to-end encryption. Your hosting/database account administrators can access the stored data.
-- Cloud drafts remain in memory while saving. A failed save never falls back to local demo storage. Export before closing a tab with unsaved changes.
+- Unsynced edits are kept in this browser's localStorage under a per-user key until the cloud confirms them, then removed. Signing out removes them. They are not encrypted, so sign out on a shared device.
 
 ## Save and recovery behavior
 
-Edits autosave after a short pause. Only one cloud write runs at a time; changes made during it queue for the next save. A revision check prevents another tab/device's newer data being silently overwritten. If a conflict appears, export your local draft, reload, and reapply the relevant edits. The Reload action automatically downloads a pending draft before asking to replace it.
+Edits autosave after a short pause and are copied to this device first, so a closed tab, dead battery or lost signal does not lose them. A failed save retries automatically (5s, 15s, 30s, then every 60s) and immediately when the connection returns. Reopening the app recovers anything that never reached the cloud.
 
-The local demo uses a separate `journal26-demo-v1` localStorage key. Browser-local data is visible to anyone using the same browser profile and may be removed by clearing site data. Its storage capacity is lower than Supabase's; export important work and use the private cloud journal for real entries.
+Returning to a tab pulls the latest version. If two devices did save different edits, they are combined automatically, record by record and field by field. Only when both changed the same field to different values does the app ask: **Keep this device's** keeps your value for those fields and everything already combined; **Use the cloud version** downloads your draft as JSON first, then loads the cloud copy.
 
 ## Image handling and storage
 
@@ -60,7 +62,7 @@ JPEG, PNG, WebP, and GIF inputs under 10 MB are accepted. The app converts image
 
 Removing an image from an entry removes its reference; it intentionally does not immediately delete the remote file, so a failed journal save cannot leave a broken attachment. Unreferenced files may be deleted manually in Supabase Storage after verifying your latest saved journal and exports. Exported JSON contains cloud object paths, not the image bytes; download any images you want in a separate offline backup.
 
-Free-tier storage is finite, and inactive free Supabase projects may be paused. Check the provider's current limits at <https://supabase.com/pricing>. Export periodically; Free does not provide automatic database backups. An export is your portable record, not an automatic scheduled backup.
+Free-tier storage is finite, and inactive free Supabase projects may be paused. Check the provider's current limits at <https://supabase.com/pricing>. Export periodically; Free does not provide automatic database backups. An export is your portable record, not an automatic scheduled backup. The Today screen reminds you when your last backup is over a week old, and Settings can restore a JSON backup. Restore brings back the text records; image files stay in Storage, and their bytes in a complete backup are not re-uploaded.
 
 ## Required live checks
 
@@ -68,10 +70,10 @@ After connecting your project:
 
 1. Create a task, journal text, habit check-in, application, and closed trade; wait for **Saved**, refresh, then sign out/in and confirm they persist.
 2. Upload a screenshot and confirm it still opens after refreshing.
-3. Open the app in two tabs. Save in one, then edit the other. The stale tab must report a conflict rather than overwrite the first tab.
-4. Disable the network after loading and edit. Confirm an unsaved/error state and unload warning. Reconnect and Retry.
+3. Open the app on two devices. Edit different fields on each and confirm both survive. Then edit the same field on each and confirm you are asked which to keep.
+4. Disable the network after loading and edit. Confirm the "Not synced yet" state, close the tab, reconnect, reopen and confirm the edit returned.
 5. In an incognito browser, open `/journal`; it must redirect to sign in. A public image URL must not expose attachments.
 6. Use a second test user to prove RLS rejects another user's row and image paths. Remove that user after the check.
 7. Request and complete a password reset using the deployed origin.
 
-These checks require a real project and valid credentials. A successful local build or demo test does not prove live database/storage configuration.
+These checks require a real project and valid credentials. `npm run test:cloud` proves the app's logic against a local mock; it cannot prove real row-level security or Storage policies. Only checks 5 and 6 above can.

@@ -19,6 +19,11 @@ import type { Trade, Workspace } from '../src/lib/types.ts';
 function trade(overrides: Partial<Trade> = {}): Trade {
   return {
     id: 'test-trade',
+    time: '',
+    session: '',
+    grade: '',
+    mistakes: [],
+    rulesChecked: [],
     date: '2026-11-01',
     symbol: 'XAUUSD',
     account: 'demo',
@@ -158,7 +163,7 @@ test('closed zero results are real trades but absent results are excluded', () =
   ]);
   assert.equal(stats.count, 3);
   assert.equal(stats.net, 10);
-  assert.equal(stats.winRate, 100 / 3);
+  assert.ok(Math.abs(stats.winRate! - 100 / 3) < 1e-9);
 });
 
 test('broker net P&L is not reduced by fees a second time', () => {

@@ -8,3 +8,5 @@ next-env.d.ts
 AGENTS.md
 *.md
 public
+test-results
+playwright-report

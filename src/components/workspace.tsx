@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { addDays, dayDifference, formatDate, todayIn } from '@/lib/domain';
+import { addDays, currentDay, dayDifference, formatDate } from '@/lib/domain';
+import { describeConflict } from '@/lib/merge';
 import { exportJson } from '@/lib/export';
 import { useWorkspace } from '@/lib/use-workspace';
 import { createClient } from '@/lib/supabase/client';
@@ -11,6 +13,7 @@ import { Trades } from './trades';
 import { Career } from './career';
 import { Review } from './review';
 import { Settings } from './settings';
+import { UrgeButton } from './urge';
 import { Icon, type IconName } from './ui';
 
 const navigation: { id: View; label: string; icon: IconName }[] = [
@@ -25,10 +28,10 @@ export function Workspace({ demo = false, userId }: { demo?: boolean; userId?: s
   if (!store.data)
     return (
       <main className="loading-page">
-        <a href="/" className="brand">
+        <Link href="/" className="brand">
           journal<span>26</span>
           <i />
-        </a>
+        </Link>
         <div className="panel loading-panel">
           <Icon name={store.error ? 'lock' : 'leaf'} size={30} />
           <h1>{store.error ? 'Your journal is still safe.' : 'Opening a fresh page…'}</h1>
@@ -54,8 +57,12 @@ export function Workspace({ demo = false, userId }: { demo?: boolean; userId?: s
       userId={userId}
       status={store.status}
       error={store.error}
+      notice={store.notice}
+      conflicts={store.conflicts}
       retry={store.retry}
       reload={store.reload}
+      keepMine={store.keepMine}
+      forgetDevice={store.forgetDevice}
       pending={store.pending}
     />
   );
@@ -67,8 +74,12 @@ function WorkspaceContent({
   userId,
   status,
   error,
+  notice,
+  conflicts,
   retry,
   reload,
+  keepMine,
+  forgetDevice,
   pending,
 }: {
   data: WorkspaceData;
@@ -77,8 +88,12 @@ function WorkspaceContent({
   userId?: string;
   status: string;
   error: string | null;
+  notice: string | null;
+  conflicts: string[];
   retry: () => void;
   reload: () => void;
+  keepMine: () => void;
+  forgetDevice: () => void;
   pending: boolean;
 }) {
   const [view, setView] = useState<View>('today');
@@ -90,7 +105,7 @@ function WorkspaceContent({
     const id = setInterval(() => tick(n => n + 1), 60000);
     return () => clearInterval(id);
   }, []);
-  const today = todayIn(data.settings.timezone);
+  const today = currentDay(data.settings);
   const date = selectedDate ?? today;
   const challengeDay = dayDifference(data.settings.startDate, today) + 1;
   const progress = Math.min(100, (Math.max(0, challengeDay - 1) / data.settings.duration) * 100);
@@ -139,6 +154,9 @@ function WorkspaceContent({
     try {
       const { error } = await createClient().auth.signOut();
       if (error) throw error;
+      forgetDevice();
+      // A full page load drops every in-memory copy of the journal from this tab.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign('/login');
     } catch {
       setSignOutError('Could not sign out. Please try again.');
@@ -258,37 +276,44 @@ function WorkspaceContent({
             </a>
           </div>
         )}
+        {notice && !error && (
+          <div className="sync-notice" role="status">
+            {notice}
+          </div>
+        )}
         {(error || signOutError) && (
           <div className="save-alert" role="alert">
             <div>
               <strong>
-                {status === 'conflict'
-                  ? 'A newer version was saved on another device.'
-                  : 'Your changes need attention.'}
+                {status === 'conflict' ? 'Two devices changed the same thing.' : 'Not synced yet.'}
               </strong>
               <p>{error || signOutError}</p>
+              {conflicts.length > 0 && (
+                <ul className="conflict-list">
+                  {conflicts.map(path => (
+                    <li key={path}>{describeConflict(path)}</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="inline">
               <button className="button button-secondary button-small" onClick={() => exportJson(data)}>
                 Export my draft
               </button>
               {status === 'conflict' ? (
-                <button
-                  className="button button-primary button-small"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        'Reload the cloud version? Your unsaved local changes will be replaced. Export your draft first.',
-                      )
-                    )
-                      reload();
-                  }}
-                >
-                  Reload cloud version
-                </button>
+                <>
+                  <button className="button button-secondary button-small" onClick={reload}>
+                    Use the cloud version
+                  </button>
+                  {conflicts.length > 0 && (
+                    <button className="button button-primary button-small" onClick={keepMine}>
+                      Keep this device&rsquo;s
+                    </button>
+                  )}
+                </>
               ) : (
                 <button className="button button-primary button-small" onClick={retry}>
-                  Retry save
+                  Retry now
                 </button>
               )}
             </div>
@@ -309,7 +334,7 @@ function WorkspaceContent({
               <h1>{titles[view]}</h1>
               <p>{subtitles[view]}</p>
             </div>
-            {view !== 'settings' && (
+            {(view === 'today' || view === 'journal' || view === 'review') && (
               <div className="date-controls">
                 <button
                   className="icon-button"
@@ -362,6 +387,8 @@ function WorkspaceContent({
                 setSelectedDate(addDays(today, 1));
                 navigate('today');
               }}
+              onSelectDate={setSelectedDate}
+              onNavigate={navigate}
             />
           )}
           {view === 'journal' && <Journal {...props} onSelectDate={setSelectedDate} />}
@@ -377,6 +404,7 @@ function WorkspaceContent({
           </footer>
         </main>
       </div>
+      <UrgeButton data={data} update={update} today={today} />
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {navigation.map(item => (
           <button

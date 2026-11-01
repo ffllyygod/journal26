@@ -18,11 +18,15 @@ export type DayEntry = {
   noTrade: boolean;
   noTradeReason: string;
   attachments: Attachment[];
+  closed: boolean;
 };
+export type TradeSession = '' | 'asia' | 'london' | 'newyork';
 export type Trade = {
   id: string;
   date: string;
-  symbol: 'XAUUSD' | 'BTC' | 'ETH';
+  time: string;
+  session: TradeSession;
+  symbol: string;
   account: 'demo' | 'live';
   direction: 'long' | 'short';
   status: 'open' | 'closed';
@@ -37,6 +41,9 @@ export type Trade = {
   fees: number;
   emotion: string;
   followedPlan: 'yes' | 'no' | 'unset';
+  grade: '' | 'A' | 'B' | 'C';
+  mistakes: string[];
+  rulesChecked: string[];
   thesis: string;
   review: string;
   attachments: Attachment[];
@@ -62,6 +69,29 @@ export type Settings = {
   currency: string;
   intention: string;
   configured: boolean;
+  habitLabels: { smoking: string; abstinence: string };
+  /** Hour (0-23) a new journal day starts, so a 1am session still counts as the previous day. */
+  dayStartHour: number;
+  symbols: string[];
+  tradingRules: string[];
+  maxTradesPerDay: number | null;
+  maxDailyLoss: number | null;
+  weeklyApplicationTarget: number;
+  morningReminder: string;
+  eveningReminder: string;
+  urgePlan: string;
+  lastBackupAt: string | null;
+};
+export type HabitKey = 'smoking' | 'abstinence';
+export type Urge = {
+  id: string;
+  at: string;
+  date: string;
+  habit: HabitKey;
+  intensity: number;
+  trigger: string;
+  note: string;
+  outcome: 'resisted' | 'slipped';
 };
 export type Workspace = {
   version: 1;
@@ -71,6 +101,7 @@ export type Workspace = {
   applications: Application[];
   learning: LearningNote[];
   weeklyNotes: Record<string, string>;
+  urges: Urge[];
 };
 export type UpdateWorkspace = (updater: (current: Workspace) => Workspace) => void;
 export type FeatureProps = {

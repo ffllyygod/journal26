@@ -1,15 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import type { FeatureProps } from '@/lib/types';
-import { addDays, emptyDay, formatDate, hours, todayIn, weekStart } from '@/lib/domain';
+import {
+  applicationsThisWeek,
+  bestStreak,
+  breakdown,
+  dayLoop,
+  tradeAnalytics,
+  urgeStats,
+} from '@/lib/analytics';
+import type { FeatureProps, Trade } from '@/lib/types';
+import {
+  addDays,
+  currentDay,
+  emptyDay,
+  formatDate,
+  habitStreak,
+  hours,
+  money,
+  weekStart,
+} from '@/lib/domain';
 import { Field, Icon, SectionHeading } from './ui';
 
 export function Review({ data, update, date }: FeatureProps) {
-  const [offset, setOffset] = useState(0);
-  const start = addDays(weekStart(date), offset * 7);
+  const start = weekStart(date);
   const end = addDays(start, 6);
-  const today = todayIn(data.settings.timezone);
+  const today = currentDay(data.settings);
   const days = Array.from({ length: 7 }, (_, index) => {
     const key = addDays(start, index);
     return { key, entry: data.days[key] ?? emptyDay(), recorded: !!data.days[key], future: key > today };
@@ -32,33 +47,19 @@ export function Review({ data, update, date }: FeatureProps) {
     60,
   );
   const habits = [
-    { key: 'smoking' as const, label: 'Smoke-free', icon: 'leaf' as const },
-    { key: 'abstinence' as const, label: 'Abstinence', icon: 'flame' as const },
+    { key: 'smoking' as const, label: data.settings.habitLabels.smoking, icon: 'leaf' as const },
+    { key: 'abstinence' as const, label: data.settings.habitLabels.abstinence, icon: 'flame' as const },
   ];
+  const weekTrades = data.trades.filter(trade => trade.date >= start && trade.date <= end);
+  const urges = urgeStats(data.urges, start, end);
+  const completeDays = elapsed.filter(day => dayLoop(data, day.key).every(step => step.done)).length;
+  const challengeDays = Array.from({ length: data.settings.duration }, (_, index) =>
+    addDays(data.settings.startDate, index),
+  );
 
   return (
     <div className="stack">
-      <SectionHeading eyebrow="PAUSE. NOTICE. ADJUST." title="Your weekly reflection">
-        <div className="inline">
-          <button
-            className="icon-button"
-            aria-label="Previous week"
-            onClick={() => setOffset(value => value - 1)}
-          >
-            <Icon name="chevron" style={{ transform: 'rotate(180deg)' }} />
-          </button>
-          <button className="button button-secondary button-small" onClick={() => setOffset(0)}>
-            Selected week
-          </button>
-          <button
-            className="icon-button"
-            aria-label="Next week"
-            onClick={() => setOffset(value => value + 1)}
-          >
-            <Icon name="chevron" />
-          </button>
-        </div>
-      </SectionHeading>
+      <SectionHeading eyebrow="PAUSE. NOTICE. ADJUST." title="Your weekly reflection"></SectionHeading>
       <p className="muted">
         {formatDate(start, { month: 'long', day: 'numeric' })} –{' '}
         {formatDate(end, { month: 'long', day: 'numeric', year: 'numeric' })}. Look for something to repeat
@@ -205,6 +206,78 @@ export function Review({ data, update, date }: FeatureProps) {
           })}
         </div>
       </section>
+      <div className="analytics-grid">
+        <section className="panel">
+          <SectionHeading title="Trading this week" />
+          <WeekTrades trades={weekTrades} account="live" currency={data.settings.currency} />
+          <WeekTrades trades={weekTrades} account="demo" currency={data.settings.currency} />
+          {!weekTrades.length && <p className="muted">No trades logged this week.</p>}
+        </section>
+        <section className="panel">
+          <SectionHeading title="Cravings this week" />
+          {urges.total ? (
+            <>
+              <p>
+                <strong>{urges.resisted}</strong> of <strong>{urges.total}</strong> rode out.{' '}
+                {urges.slipped > 0 && `${urges.slipped} became a slip.`}
+              </p>
+              {urges.topTriggers.length > 0 && (
+                <p className="muted">
+                  Most common:{' '}
+                  {urges.topTriggers.map(([trigger, count]) => `${trigger} (${count})`).join(', ')}. Plan
+                  ahead for it next week.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="muted">
+              None logged. Tap Craving next time one shows up; the pattern only appears if it is recorded.
+            </p>
+          )}
+          <p className="muted review-apps">
+            Applications: <strong>{applicationsThisWeek(data, start)}</strong> of{' '}
+            {data.settings.weeklyApplicationTarget} · Full days: <strong>{completeDays}</strong> of{' '}
+            {elapsed.length}
+          </p>
+        </section>
+      </div>
+      <section className="panel">
+        <SectionHeading title="The whole challenge">
+          <span className="muted">{data.settings.duration} days</span>
+        </SectionHeading>
+        <div className="habit-review-grid">
+          {habits.map(habit => (
+            <div key={habit.key}>
+              <div className="split">
+                <strong>{habit.label}</strong>
+                <span className="muted">
+                  {habitStreak(data.days, habit.key, today)} now · best{' '}
+                  {bestStreak(data.days, habit.key, today)}
+                </span>
+              </div>
+              <div className="challenge-grid">
+                {challengeDays.map(day => {
+                  const state = day > today ? 'future' : (data.days[day]?.[habit.key] ?? 'unset');
+                  const name = { future: 'upcoming', unset: 'not logged', kept: 'kept', slip: 'slip' }[state];
+                  return (
+                    <span
+                      key={day}
+                      className={`challenge-cell cell-${state}`}
+                      title={`${formatDate(day, { month: 'short', day: 'numeric' })}: ${name}`}
+                    >
+                      {state === 'slip' ? '×' : ''}
+                      <span className="sr-only">
+                        {day}: {name}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="microcopy">Filled: kept. ×: slip. Outlined: not logged. Faint: upcoming.</p>
+      </section>
       <section className="panel">
         <SectionHeading eyebrow="TAKE SOMETHING INTO NEXT WEEK" title="What did this week teach you?" />
         <p className="muted">
@@ -223,6 +296,38 @@ export function Review({ data, update, date }: FeatureProps) {
           />
         </Field>
       </section>
+    </div>
+  );
+}
+
+function WeekTrades({
+  trades,
+  account,
+  currency,
+}: {
+  trades: Trade[];
+  account: Trade['account'];
+  currency: string;
+}) {
+  const scoped = trades.filter(trade => trade.account === account);
+  if (!scoped.length) return null;
+  const stats = tradeAnalytics(scoped);
+  const costliest = breakdown(scoped, trade => trade.mistakes)[0];
+  return (
+    <div className="week-trades">
+      <span className="eyebrow">{account === 'live' ? 'LIVE' : 'DEMO / PAPER'}</span>
+      <p>
+        <strong>{stats.count ? money(stats.net, currency) : 'Open only'}</strong> from {stats.count} closed
+        trade{stats.count === 1 ? '' : 's'}
+        {stats.winRate !== null && ` · ${Math.round(stats.winRate)}% wins`}
+        {stats.avgR !== null && ` · ${stats.avgR.toFixed(2)}R avg`}
+        {stats.adherence !== null && ` · ${Math.round(stats.adherence)}% to plan`}
+      </p>
+      {costliest && costliest.net < 0 && (
+        <p className="muted">
+          Costliest mistake: {costliest.key} ({money(costliest.net, currency)} across {costliest.count}).
+        </p>
+      )}
     </div>
   );
 }

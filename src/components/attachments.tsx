@@ -67,7 +67,9 @@ export function AttachmentGallery({
   const [error, setError] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const current = useRef(attachments);
-  current.current = attachments;
+  useEffect(() => {
+    current.current = attachments;
+  }, [attachments]);
   async function add(files: FileList | null) {
     if (!files?.length) return;
     if (current.current.length + files.length > 6) {
