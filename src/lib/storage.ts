@@ -8,7 +8,14 @@ const OUTPUT_LIMIT = 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not prepare this image. Try a different file.')), 'image/webp', quality));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      blob =>
+        blob ? resolve(blob) : reject(new Error('Could not prepare this image. Try a different file.')),
+      'image/webp',
+      quality,
+    ),
+  );
 }
 
 async function compressImage(file: File): Promise<Blob> {
@@ -17,7 +24,8 @@ async function compressImage(file: File): Promise<Blob> {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
-    if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth * image.naturalHeight > 50_000_000) throw new Error('Choose an image smaller than 50 megapixels.');
+    if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth * image.naturalHeight > 50_000_000)
+      throw new Error('Choose an image smaller than 50 megapixels.');
     const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -28,9 +36,12 @@ async function compressImage(file: File): Promise<Blob> {
     let blob = await toBlob(canvas, 0.82);
     if (blob.size > OUTPUT_LIMIT) blob = await toBlob(canvas, 0.6);
     if (blob.size > OUTPUT_LIMIT) blob = await toBlob(canvas, 0.4);
-    if (blob.size > OUTPUT_LIMIT) throw new Error('This image is still too large after compression. Try a smaller screenshot.');
+    if (blob.size > OUTPUT_LIMIT)
+      throw new Error('This image is still too large after compression. Try a smaller screenshot.');
     return blob;
-  } finally { URL.revokeObjectURL(objectUrl); }
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 export async function uploadImage(file: File, demo: boolean, userId?: string): Promise<Attachment> {
@@ -50,7 +61,9 @@ export async function uploadImage(file: File, demo: boolean, userId?: string): P
     });
   } else {
     path = `${userId}/${id}.${blob.type === 'image/webp' ? 'webp' : 'png'}`;
-    const { error } = await createClient().storage.from('journal-images').upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: '3600' });
+    const { error } = await createClient()
+      .storage.from('journal-images')
+      .upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: '3600' });
     if (error) throw new Error(`Upload failed: ${error.message}`);
   }
   return { id, name: file.name, path, mime: blob.type, size: blob.size };
@@ -58,10 +71,13 @@ export async function uploadImage(file: File, demo: boolean, userId?: string): P
 
 export async function attachmentUrl(attachment: Attachment, demo: boolean): Promise<string> {
   if (demo) {
-    if (!/^data:image\/(webp|png|jpeg);base64,/.test(attachment.path)) throw new Error('Invalid local image.');
+    if (!/^data:image\/(webp|png|jpeg);base64,/.test(attachment.path))
+      throw new Error('Invalid local image.');
     return attachment.path;
   }
-  const { data, error } = await createClient().storage.from('journal-images').createSignedUrl(attachment.path, 3600);
+  const { data, error } = await createClient()
+    .storage.from('journal-images')
+    .createSignedUrl(attachment.path, 3600);
   if (error || !data?.signedUrl) throw new Error('Could not load this private image. Sign in and try again.');
   return data.signedUrl;
 }

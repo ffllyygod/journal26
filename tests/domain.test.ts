@@ -1,14 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addDays, createWorkspace, dayDifference, emptyDay, formatDate, habitCount, habitStreak, safeUrl, todayIn, tradeR, tradeStats, weekStart } from '../src/lib/domain.ts';
+import {
+  addDays,
+  createWorkspace,
+  dayDifference,
+  emptyDay,
+  formatDate,
+  habitCount,
+  habitStreak,
+  safeUrl,
+  todayIn,
+  tradeR,
+  tradeStats,
+  weekStart,
+} from '../src/lib/domain.ts';
 import type { Trade, Workspace } from '../src/lib/types.ts';
 
 function trade(overrides: Partial<Trade> = {}): Trade {
   return {
-    id: 'test-trade', date: '2026-11-01', symbol: 'XAUUSD', account: 'demo', direction: 'long',
-    status: 'closed', setup: 'Retest', entry: 2700, exit: 2710, stop: 2695, target: 2710,
-    size: '0.01 lots', risk: 10, netPnl: 20, fees: 2, emotion: 'Calm', followedPlan: 'yes',
-    thesis: '', review: '', attachments: [], ...overrides,
+    id: 'test-trade',
+    date: '2026-11-01',
+    symbol: 'XAUUSD',
+    account: 'demo',
+    direction: 'long',
+    status: 'closed',
+    setup: 'Retest',
+    entry: 2700,
+    exit: 2710,
+    stop: 2695,
+    target: 2710,
+    size: '0.01 lots',
+    risk: 10,
+    netPnl: 20,
+    fees: 2,
+    emotion: 'Calm',
+    followedPlan: 'yes',
+    thesis: '',
+    review: '',
+    attachments: [],
+    ...overrides,
   };
 }
 
@@ -119,7 +149,13 @@ test('empty or only-open trade logs have no realised win rate', () => {
 });
 
 test('closed zero results are real trades but absent results are excluded', () => {
-  const stats = tradeStats([trade({ netPnl: 20 }), trade({ netPnl: -10 }), trade({ netPnl: 0 }), trade({ netPnl: null }), trade({ status: 'open', netPnl: 100 })]);
+  const stats = tradeStats([
+    trade({ netPnl: 20 }),
+    trade({ netPnl: -10 }),
+    trade({ netPnl: 0 }),
+    trade({ netPnl: null }),
+    trade({ status: 'open', netPnl: 100 }),
+  ]);
   assert.equal(stats.count, 3);
   assert.equal(stats.net, 10);
   assert.equal(stats.winRate, 100 / 3);
@@ -131,7 +167,11 @@ test('broker net P&L is not reduced by fees a second time', () => {
 });
 
 test('separately filtered demo and live accounts produce separate results', () => {
-  const trades = [trade({ account: 'demo', netPnl: 100 }), trade({ account: 'live', netPnl: -25 }), trade({ account: 'live', status: 'open', netPnl: null })];
+  const trades = [
+    trade({ account: 'demo', netPnl: 100 }),
+    trade({ account: 'live', netPnl: -25 }),
+    trade({ account: 'live', status: 'open', netPnl: null }),
+  ];
   assert.equal(tradeStats(trades.filter(t => t.account === 'demo')).net, 100);
   assert.equal(tradeStats(trades.filter(t => t.account === 'live')).net, -25);
   assert.equal(tradeStats(trades.filter(t => t.account === 'live')).count, 1);
@@ -144,7 +184,13 @@ test('R uses monetary initial risk and correctly represents wins, losses, and br
 });
 
 test('R remains unknown for open trades, absent results, or nonpositive risk', () => {
-  for (const overrides of [{ status: 'open' as const }, { netPnl: null }, { risk: null }, { risk: 0 }, { risk: -10 }]) {
+  for (const overrides of [
+    { status: 'open' as const },
+    { netPnl: null },
+    { risk: null },
+    { risk: 0 },
+    { risk: -10 },
+  ]) {
     assert.equal(tradeR(trade(overrides)), null);
   }
 });
@@ -152,7 +198,15 @@ test('R remains unknown for open trades, absent results, or nonpositive risk', (
 test('evidence links permit web URLs and reject executable or malformed URLs', () => {
   assert.equal(safeUrl('https://example.com/project?q=journal'), 'https://example.com/project?q=journal');
   assert.equal(safeUrl('http://localhost:3000/'), 'http://localhost:3000/');
-  for (const value of ['javascript:alert(1)', 'data:text/html,test', 'file:///etc/passwd', '//example.com', '/relative', 'not a url', '']) {
+  for (const value of [
+    'javascript:alert(1)',
+    'data:text/html,test',
+    'file:///etc/passwd',
+    '//example.com',
+    '/relative',
+    'not a url',
+    '',
+  ]) {
     assert.equal(safeUrl(value), undefined, value);
   }
 });

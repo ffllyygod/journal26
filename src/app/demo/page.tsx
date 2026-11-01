@@ -1,2 +1,4 @@
 import { Workspace } from '@/components/workspace';
-export default function DemoPage() { return <Workspace demo/>; }
+export default function DemoPage() {
+  return <Workspace demo />;
+}

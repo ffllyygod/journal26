@@ -73,4 +73,10 @@ export type Workspace = {
   weeklyNotes: Record<string, string>;
 };
 export type UpdateWorkspace = (updater: (current: Workspace) => Workspace) => void;
-export type FeatureProps = { data: Workspace; update: UpdateWorkspace; date: string; demo: boolean; userId?: string };
+export type FeatureProps = {
+  data: Workspace;
+  update: UpdateWorkspace;
+  date: string;
+  demo: boolean;
+  userId?: string;
+};

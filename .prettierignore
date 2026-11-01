@@ -1,0 +1,10 @@
+.next
+node_modules
+package-lock.json
+.omx
+.omc
+.firecrawl
+next-env.d.ts
+AGENTS.md
+*.md
+public

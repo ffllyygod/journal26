@@ -16,7 +16,9 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await client.auth.getUser();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
   if (!user && request.nextUrl.pathname.startsWith('/journal')) {
     const redirect = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.getAll().forEach(cookie => redirect.cookies.set(cookie));

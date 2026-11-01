@@ -8,10 +8,15 @@ export async function createClient() {
   const { url, key } = supabaseConfig();
   return createServerClient(url, key, {
     cookies: {
-      getAll() { return store.getAll(); },
+      getAll() {
+        return store.getAll();
+      },
       setAll(values) {
-        try { values.forEach(({ name, value, options }) => store.set(name, value, options)); }
-        catch { /* Server components cannot write cookies; proxy refreshes them. */ }
+        try {
+          values.forEach(({ name, value, options }) => store.set(name, value, options));
+        } catch {
+          /* Server components cannot write cookies; proxy refreshes them. */
+        }
       },
     },
   });
@@ -20,7 +25,10 @@ export async function createClient() {
 export async function requireUser() {
   if (!isConfigured()) redirect('/login');
   const client = await createClient();
-  const { data: { user }, error } = await client.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
   if (error || !user) redirect('/login');
   return user;
 }
