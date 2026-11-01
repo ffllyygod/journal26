@@ -3327,3 +3327,25 @@ small {
 .habit-mark {
   color: var(--ink);
 }
+/* The two answers must stay reachable while a craving is happening, without scrolling. */
+.urge-modal .modal-actions {
+  position: sticky;
+  bottom: -1px;
+  padding: 10px 0;
+  background: #fafbf7;
+}
+.urge-modal input[type='range'] {
+  accent-color: var(--green);
+}
+.data-table td select {
+  min-width: 112px;
+}
+@media (max-width: 700px) {
+  .filter-bar > select:only-of-type {
+    grid-column: 1 / -1;
+  }
+}
+/* Otherwise the absolutely positioned header label escapes this scroller and widens the page. */
+.table-wrap {
+  position: relative;
+}
