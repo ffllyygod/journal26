@@ -130,6 +130,24 @@ test('two devices creating the same new day merge field by field', () => {
   assert.deepEqual(day.priorities, ['laptop goal', 'phone goal', '']);
 });
 
+test('a day planned on one device is a plain addition, not a conflict', () => {
+  const base = workspace();
+  base.days['2026-11-01'] = emptyDay();
+  const laptop = structuredClone(base);
+  laptop.days['2026-11-02'] = { ...emptyDay(), priorities: ['Plan for tomorrow', '', ''] };
+  const phone = structuredClone(base);
+  phone.days['2026-11-01'].journal = 'Written on the phone';
+  for (const [local, remote] of [
+    [laptop, phone],
+    [phone, laptop],
+  ]) {
+    const { value, conflicts } = mergeWorkspaces(base, local, remote);
+    assert.deepEqual(conflicts, []);
+    assert.equal(value.days['2026-11-02'].priorities[0], 'Plan for tomorrow');
+    assert.equal(value.days['2026-11-01'].journal, 'Written on the phone');
+  }
+});
+
 test('merge unions trades by id and honours deletes', () => {
   const a = trade({ id: 'a' });
   const b = trade({ id: 'b' });

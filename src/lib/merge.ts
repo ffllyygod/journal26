@@ -101,7 +101,8 @@ export function mergeWorkspaces(
   remote: Workspace,
 ): MergeResult<Workspace> {
   const days = { ...base.days };
-  for (const date of [...Object.keys(local.days), ...Object.keys(remote.days)]) days[date] ??= emptyDay();
+  // Only when both created it. A day on one device alone is a plain addition and must stay one.
+  for (const date of Object.keys(local.days)) if (remote.days[date]) days[date] ??= emptyDay();
   return mergeThreeWay({ ...base, days }, local, remote);
 }
 

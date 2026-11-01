@@ -65,6 +65,19 @@ test('edits to different fields on two devices merge with no prompt', async ({ c
   await expect(journal(a)).toHaveValue('Written on the phone.');
 });
 
+test('planning tomorrow on one device and journaling on another does not prompt', async ({ context }) => {
+  const { a, b } = await twoDevices(context);
+  await b.getByRole('button', { name: 'Plan tomorrow', exact: true }).click();
+  await b.getByLabel('Priority 1').fill('Planned on the laptop');
+  await synced(b);
+  await journal(a).fill('Journaled on the phone.');
+  await synced(a);
+  await expect(a.locator('.save-alert')).toHaveCount(0);
+  const days = Object.values<{ journal: string; priorities: string[] }>((await row(a)).document.days);
+  expect(days.some(day => day.journal === 'Journaled on the phone.')).toBe(true);
+  expect(days.some(day => day.priorities[0] === 'Planned on the laptop')).toBe(true);
+});
+
 test('the same field on two devices asks, and keeping this device wins without losing the rest', async ({
   context,
 }) => {

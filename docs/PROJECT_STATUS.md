@@ -98,4 +98,4 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 ## History
 
 - **Codex**: first build. Good design and data-safety instincts, but nothing was ever committed, lint and one test failed, `.sr-only` was never defined, and source was on single lines over 2,000 characters.
-- **Claude Code, 2026-11-01**: put it under version control and fixed the above. Added the daily loop, sync merge and recovery, trade depth, cravings, restore, reminders and both browser test suites. Raised text contrast to WCAG AA across the app.
+- **Claude Code, 2026-11-01**: put it under version control and fixed the above. Added the daily loop, sync merge and recovery, trade depth, cravings, restore, reminders and both browser test suites. Raised text contrast to WCAG AA across the app. Independent security and correctness reviews ran; their findings (a CSP, a false merge conflict, lost fees) are fixed. No exploitable security issue was found.

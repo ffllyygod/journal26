@@ -90,7 +90,7 @@ export function TradeEditor({
     const target = number('target');
     const risk = number('risk');
     const netPnl = status === 'closed' ? number('netPnl') : null;
-    const fees = number('fees') ?? 0;
+    const fees = form.has('fees') ? (number('fees') ?? 0) : (trade?.fees ?? 0);
     const symbol = text('symbol').toUpperCase();
     const direction = text('direction') as Trade['direction'];
     if (!symbol) return setError('Enter the market, such as XAUUSD.');
