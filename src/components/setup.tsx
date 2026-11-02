@@ -1,6 +1,6 @@
 'use client';
 
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { addDays, formatDate } from '@/lib/domain';
 import type { FeatureProps } from '@/lib/types';
 import { Field } from './ui';
@@ -16,6 +16,7 @@ export function Setup({
   today: string;
 }) {
   const { settings } = data;
+  const [startDate, setStartDate] = useState(today);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -42,7 +43,8 @@ export function Setup({
         <span className="brand">journal26</span>
         <h1>Set up your {settings.duration} days</h1>
         <p className="muted">
-          Runs until {formatDate(addDays(today, settings.duration - 1), { month: 'long', day: 'numeric' })}.
+          Runs until{' '}
+          {formatDate(addDays(startDate || today, settings.duration - 1), { month: 'long', day: 'numeric' })}.
           Only you can see this, and you can change all of it later in Settings.
         </p>
         <div className="form-grid">
@@ -50,7 +52,13 @@ export function Setup({
             <input name="name" defaultValue={settings.name} maxLength={40} autoFocus />
           </Field>
           <Field label="Start date">
-            <input name="startDate" type="date" defaultValue={today} required />
+            <input
+              name="startDate"
+              type="date"
+              value={startDate}
+              onChange={event => setStartDate(event.target.value)}
+              required
+            />
           </Field>
           <Field label="First habit to quit">
             <input name="habitOne" defaultValue={settings.habitLabels.smoking} maxLength={30} required />

@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Setup end-date preview follows the selected start date. Independent writing-progress logic counts reflection days without requiring a full routine, with targeted unit coverage; the UI integration follows in the next change.
 - First-run setup: name, start date, habit names, reason and craving plan, before anything else
 - 60-square board: the challenge at a glance and the way to open any day
 - Focus timer per track or per task. Survives reloads, stored on the device only, and credits actual time exactly once (`logSession`)
@@ -113,6 +114,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, 2026-11-02**: recorded product/design direction and the UX critique, added independent writing-progress logic with unit coverage, and corrected the setup end-date preview.
 - **Codex**: first build. Good design and data-safety instincts, but nothing was ever committed, lint and one test failed, `.sr-only` was never defined, and source was on single lines over 2,000 characters.
 - **Claude Code, 2026-11-02**: first production deploy to Vercel by CLI from the working tree, against the real Supabase project. All three test suites passed first; the live checks have not run.
 - **Codex, then Claude Code, 2026-11-02**: Codex left an uncommitted reskin plus sound fixes (task time credits, uploads that follow their date, documented open trades) that broke the build through type errors in its spec. Claude Code fixed that, then reworked the product after the owner said it felt like a demo: board, step sheet, focus timer, patterns, weekly change, trade flow, first-run setup, new visual system and plain copy.
