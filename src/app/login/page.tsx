@@ -7,16 +7,9 @@ export default function LoginPage() {
     <main className="auth-page">
       <div className="auth-card">
         <Link className="brand" href="/">
-          journal<span>26</span>
-          <span className="brand-dot">.</span>
+          journal26
         </Link>
-        <p className="eyebrow">A LITTLE BETTER, EVERY DAY</p>
-        <h1>
-          Your next chapter
-          <br />
-          <em>starts here.</em>
-        </h1>
-        <p className="muted">A private place for your plans, progress, and honest reflections.</p>
+        <h1>Sign in</h1>
         {isConfigured() ? (
           <LoginForm />
         ) : (
@@ -32,10 +25,11 @@ export default function LoginPage() {
             </p>
           </div>
         )}
-        <Link className="text-button auth-demo" href="/demo">
-          Explore the local demo →
-        </Link>
-        <p className="auth-footnote">Your journal. Your pace. One day at a time.</p>
+        {!isConfigured() && (
+          <Link className="text-button auth-demo" href="/demo">
+            Open the demo
+          </Link>
+        )}
       </div>
     </main>
   );

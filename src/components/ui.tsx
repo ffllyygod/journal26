@@ -26,7 +26,9 @@ export type IconName =
   | 'search'
   | 'lock'
   | 'external'
-  | 'menu';
+  | 'menu'
+  | 'play'
+  | 'stop';
 const paths: Record<IconName, ReactNode> = {
   sun: (
     <>
@@ -131,6 +133,8 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  play: <path d="M7 4v16l13-8Z" />,
+  stop: <rect x="6" y="6" width="12" height="12" rx="1" />,
 };
 export function Icon({
   name,
@@ -175,7 +179,10 @@ export function Modal({
     <dialog
       ref={ref}
       className={`modal ${wide ? 'modal-wide' : ''}`}
-      onCancel={onClose}
+      onCancel={event => {
+        event.preventDefault();
+        onClose();
+      }}
       onClick={e => {
         if (e.target === e.currentTarget) {
           const r = e.currentTarget.getBoundingClientRect();
@@ -185,10 +192,7 @@ export function Modal({
       }}
     >
       <div className="modal-heading">
-        <div>
-          <span className="eyebrow">JOURNAL26</span>
-          <h2>{title}</h2>
-        </div>
+        <h2>{title}</h2>
         <button className="icon-button" onClick={onClose} aria-label="Close dialog" type="button">
           <Icon name="close" />
         </button>
@@ -228,21 +232,10 @@ export function EmptyState({
     </div>
   );
 }
-export function SectionHeading({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow?: string;
-  title: string;
-  children?: ReactNode;
-}) {
+export function SectionHeading({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="section-heading">
-      <div>
-        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h2>{title}</h2>
-      </div>
+      <h2>{title}</h2>
       {children}
     </div>
   );

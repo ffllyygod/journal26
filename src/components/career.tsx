@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import type { Application, FeatureProps, LearningNote } from '@/lib/types';
+import { applicationsThisWeek } from '@/lib/analytics';
 import { formatDate, safeUrl, todayIn } from '@/lib/domain';
 import { EmptyState, Field, Icon, Modal, SectionHeading } from './ui';
 
@@ -48,7 +49,7 @@ function ApplicationEditor({
     });
   }
   return (
-    <Modal title={application ? 'Update opportunity' : 'Add an opportunity'} onClose={close}>
+    <Modal title={application ? 'Edit application' : 'Add application'} onClose={close}>
       <form onSubmit={submit} onChange={() => setDirty(true)} className="stack">
         <div className="form-grid">
           <Field label="Company">
@@ -114,7 +115,7 @@ function ApplicationEditor({
             Cancel
           </button>
           <button className="button button-primary" type="submit">
-            Save opportunity <Icon name="check" size={17} />
+            Save application
           </button>
         </div>
       </form>
@@ -153,7 +154,7 @@ function LearningEditor({
     });
   }
   return (
-    <Modal title={note ? 'Edit learning note' : 'Make your learning visible'} onClose={close}>
+    <Modal title={note ? 'Edit note' : 'Add learning note'} onClose={close}>
       <form onSubmit={submit} onChange={() => setDirty(true)} className="stack">
         <Field label="Topic / what you built">
           <input
@@ -196,7 +197,7 @@ function LearningEditor({
             Cancel
           </button>
           <button className="button button-primary" type="submit">
-            Save learning note <Icon name="check" size={17} />
+            Save note
           </button>
         </div>
       </form>
@@ -244,38 +245,30 @@ export function Career({ data, update, date }: FeatureProps) {
 
   return (
     <div className="stack">
-      <SectionHeading eyebrow="BUILD YOUR NEXT CHAPTER" title="Work toward the offer">
-        <button className="button button-primary" onClick={() => setApplicationEditor({ application: null })}>
-          <Icon name="plus" size={17} /> Add opportunity
-        </button>
-      </SectionHeading>
-      <p className="muted">
-        A place for the work you are doing, the opportunities you are pursuing, and the next small step.
-      </p>
       <div className="stat-grid">
         <div className="stat-card">
-          <span className="eyebrow">APPLICATIONS SENT</span>
-          <strong>{submitted.length}</strong>
-          <small>Opportunities with an application date</small>
+          <span className="stat-label">Sent this week</span>
+          <strong>
+            {applicationsThisWeek(data, today)}
+            <span className="stat-denominator"> / {data.settings.weeklyApplicationTarget}</span>
+          </strong>
+          <small>{submitted.length} sent in total</small>
         </div>
         <div className="stat-card">
-          <span className="eyebrow">IN CONVERSATION</span>
+          <span className="stat-label">Interviewing</span>
           <strong>{data.applications.filter(app => app.status === 'interview').length}</strong>
-          <small>Currently at interview stage</small>
+          <small>{data.applications.filter(app => app.status === 'offer').length} offers</small>
         </div>
         <div className="stat-card">
-          <span className="eyebrow">FOLLOW-UPS DUE</span>
+          <span className="stat-label">Follow-ups due</span>
           <strong>{due.length}</strong>
-          <small>
-            {due.length ? 'A small action can move things forward' : 'Nothing waiting on a follow-up'}
-          </small>
+          <small>{due.length ? 'Listed below' : 'None waiting'}</small>
         </div>
       </div>
       {due.length > 0 && (
         <div className="notice">
-          <Icon name="clock" size={18} />
           <div>
-            <strong>Keep the conversation moving.</strong>{' '}
+            Follow up with{' '}
             {due.map((app, index) => (
               <span key={app.id}>
                 {index > 0 ? ', ' : ' '}
@@ -283,16 +276,18 @@ export function Career({ data, update, date }: FeatureProps) {
                   {app.company}
                 </button>
               </span>
-            ))}{' '}
-            {due.length === 1 ? 'has' : 'have'} a follow-up due.
+            ))}
           </div>
         </div>
       )}
       <section className="panel">
-        <SectionHeading title="Your opportunities">
-          <span className="chip">{data.applications.length} total</span>
-        </SectionHeading>
         <div className="filter-bar">
+          <button
+            className="button button-primary"
+            onClick={() => setApplicationEditor({ application: null })}
+          >
+            <Icon name="plus" size={15} /> Add application
+          </button>
           <select
             aria-label="Filter application stage"
             value={stage}
@@ -308,7 +303,7 @@ export function Career({ data, update, date }: FeatureProps) {
           <input
             type="search"
             aria-label="Search opportunities"
-            placeholder="Search company, role, or notes…"
+            placeholder="Search company, role or notes"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -316,19 +311,17 @@ export function Career({ data, update, date }: FeatureProps) {
         {applications.length === 0 ? (
           <EmptyState
             icon="briefcase"
-            title={
-              data.applications.length ? 'No matching opportunities' : 'Your next role starts with one step'
-            }
+            title={data.applications.length ? 'No matching applications' : 'No applications yet'}
             action={
               <button
                 className="button button-secondary"
                 onClick={() => setApplicationEditor({ application: null })}
               >
-                Save an opportunity <Icon name="arrow" size={16} />
+                Add application
               </button>
             }
           >
-            Save a role, track the application, and give every opportunity a next action.
+            Save a role, track where it stands, and set a follow-up date so it shows up on Today.
           </EmptyState>
         ) : (
           <div className="table-wrap">
@@ -431,18 +424,17 @@ export function Career({ data, update, date }: FeatureProps) {
         )}
       </section>
       <section className="panel">
-        <SectionHeading eyebrow="PROOF OF PROGRESS" title="What you are learning">
+        <SectionHeading title="Learning log">
           <button
             className="button button-secondary button-small"
             onClick={() => setLearningEditor({ note: null })}
           >
-            <Icon name="plus" size={16} /> Add learning note
+            <Icon name="plus" size={14} /> Add note
           </button>
         </SectionHeading>
         {learning.length === 0 ? (
-          <EmptyState icon="book" title="Turn study time into something you can show">
-            Record what you built, a concept you can explain, or a problem you solved. Link the commit or
-            demo.
+          <EmptyState icon="book" title="Nothing logged yet">
+            Record what you built or can now explain, and link the commit. Useful in interviews.
           </EmptyState>
         ) : (
           <div className="learning-list">
@@ -450,10 +442,10 @@ export function Career({ data, update, date }: FeatureProps) {
               <article className="learning-item" key={note.id}>
                 <div className="split">
                   <div>
-                    <span className="eyebrow">
-                      {formatDate(note.date, { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
                     <h3>{note.topic}</h3>
+                    <small className="muted">
+                      {formatDate(note.date, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </small>
                   </div>
                   <div className="inline">
                     <button
@@ -486,7 +478,7 @@ export function Career({ data, update, date }: FeatureProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    View evidence / resource <Icon name="external" size={14} />
+                    Open link <Icon name="external" size={14} />
                   </a>
                 )}
               </article>

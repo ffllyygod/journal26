@@ -1,20 +1,35 @@
-import { addDays, createWorkspace, emptyDay } from './domain';
+import { addDays, createWorkspace, currentDay, emptyDay, weekStart } from './domain';
 import type { Workspace } from './types';
 
-export function createDemo(today: string): Workspace {
+export function createDemo(today = currentDay(createWorkspace().settings)): Workspace {
   const data = createWorkspace(addDays(today, -8));
   data.settings = { ...data.settings, name: 'Alex', configured: true };
+  // Eight varied past days, so the board and the patterns have something real to show.
+  const notes = [
+    'Rough day after the morning loss. Walked away from the charts by noon.',
+    'Late night, poor sleep, and everything felt harder than it needed to be.',
+    'Quiet market, so I put the time into interview prep instead.',
+    'Two good study blocks. Sent applications before lunch.',
+    'Slipped in the evening. Wrote down what led to it before bed.',
+    'Waited for the retest and it paid. Stayed patient.',
+    'Solid focus until the news release, then called it.',
+    'First proper week. Kept distractions out of my first study block.',
+  ];
+  const slipOn: Record<number, 'smoking' | 'abstinence'> = { 2: 'smoking', 5: 'abstinence' };
   for (let i = 1; i <= 8; i++) {
     const date = addDays(today, -i);
+    const slipped = slipOn[i];
     data.days[date] = {
       ...emptyDay(),
-      smoking: 'kept',
-      abstinence: i === 5 ? 'slip' : 'kept',
-      careerMinutes: 150 + i * 5,
-      tradingMinutes: 120 + i * 10,
-      journal: 'Showed up for the work. Kept distractions out of my first study block.',
-      win: 'Finished the practice session I planned.',
-      mood: 4,
+      priorities: ['Keep the first study block free', 'One application', ''],
+      smoking: slipped === 'smoking' ? 'slip' : 'kept',
+      abstinence: slipped === 'abstinence' ? 'slip' : 'kept',
+      careerMinutes: slipped ? 70 : 150 + i * 12,
+      tradingMinutes: slipped ? 45 : 120 + i * 9,
+      journal: notes[i - 1],
+      mood: slipped ? 2 : i % 3 === 0 ? 3 : 4,
+      noTrade: i === 3,
+      noTradeReason: i === 3 ? 'No setup, spent the time on interview prep' : '',
     };
   }
   data.days[today] = {
@@ -106,26 +121,37 @@ export function createDemo(today: string): Workspace {
     target: direction === 'long' ? 2720 : 2680,
     ...extra,
   });
+  const offPlan = { followedPlan: 'no' as const, grade: 'C' as const };
   data.trades = [
     sample(1, 8, 'XAUUSD', 'long', 'Break and retest', 38),
     sample(2, 7, 'BTC', 'short', 'Range rejection', -21, {
+      ...offPlan,
       emotion: 'FOMO',
-      followedPlan: 'no',
-      grade: 'C',
       mistakes: ['Chased entry'],
     }),
-    sample(3, 6, 'XAUUSD', 'long', 'Break and retest', 44),
-    sample(4, 4, 'ETH', 'long', 'Trend pullback', -19, { mistakes: ['Entered early'], grade: 'B' }),
-    sample(5, 3, 'XAUUSD', 'short', 'Range rejection', 26, { session: 'newyork' }),
-    sample(6, 1, 'XAUUSD', 'long', 'Break and retest', -41, {
+    sample(3, 7, 'XAUUSD', 'long', 'Break and retest', 30),
+    sample(4, 6, 'XAUUSD', 'long', 'Break and retest', 44),
+    sample(5, 5, 'BTC', 'long', 'Trend pullback', -28, {
+      ...offPlan,
+      emotion: 'FOMO',
+      mistakes: ['Chased entry'],
+      session: 'newyork',
+    }),
+    sample(6, 4, 'ETH', 'long', 'Trend pullback', -19, { mistakes: ['Entered early'], grade: 'B' }),
+    sample(7, 4, 'XAUUSD', 'short', 'Range rejection', 26, { session: 'newyork' }),
+    sample(8, 2, 'XAUUSD', 'long', 'Break and retest', -34, {
+      ...offPlan,
       emotion: 'Rushed',
-      followedPlan: 'no',
-      grade: 'C',
+      mistakes: ['Oversized'],
+    }),
+    sample(9, 1, 'XAUUSD', 'long', 'Break and retest', -41, {
+      ...offPlan,
+      emotion: 'Rushed',
       mistakes: ['Oversized', 'No setup'],
       review: '',
     }),
     {
-      ...sample(7, 0, 'BTC', 'long', 'Trend pullback', 0),
+      ...sample(10, 0, 'BTC', 'long', 'Trend pullback', 0),
       status: 'open' as const,
       netPnl: null,
       exit: null,
@@ -134,28 +160,24 @@ export function createDemo(today: string): Workspace {
       grade: '' as const,
     },
   ];
+  const urgeAt = (daysAgo: number, utc: string, habit: 'smoking' | 'abstinence', trigger: string) => ({
+    id: `demo-urge-${daysAgo}-${utc}`,
+    at: `${addDays(today, -daysAgo)}T${utc}:00.000Z`,
+    date: addDays(today, -daysAgo),
+    habit,
+    intensity: 3,
+    trigger,
+    note: '',
+    outcome: 'resisted' as const,
+  });
   data.urges = [
-    {
-      id: 'demo-urge-1',
-      at: `${addDays(today, -1)}T15:30:00.000Z`,
-      date: addDays(today, -1),
-      habit: 'smoking',
-      intensity: 4,
-      trigger: 'Lost a trade',
-      note: '',
-      outcome: 'resisted',
-    },
-    {
-      id: 'demo-urge-2',
-      at: `${addDays(today, -2)}T17:30:00.000Z`,
-      date: addDays(today, -2),
-      habit: 'abstinence',
-      intensity: 3,
-      trigger: 'Late night',
-      note: '',
-      outcome: 'resisted',
-    },
+    urgeAt(1, '17:30', 'smoking', 'Lost a trade'),
+    urgeAt(2, '18:10', 'smoking', 'Late night'),
+    urgeAt(3, '17:45', 'abstinence', 'Late night'),
+    urgeAt(5, '19:00', 'abstinence', 'Late night'),
+    urgeAt(6, '06:30', 'smoking', 'After a meal'),
   ];
+  data.weeklyCommitments = { [weekStart(today)]: 'No trade within 15 minutes of a loss.' };
   data.applications = [
     {
       id: 'demo-app-1',

@@ -71,7 +71,7 @@ export function LoginForm() {
         </p>
       )}
       <button className="button button-primary" disabled={busy} type="submit">
-        {busy ? 'Please wait…' : recovery ? 'Send reset link' : 'Open my journal →'}
+        {busy ? 'Please wait…' : recovery ? 'Send reset link' : 'Open my journal'}
       </button>
       <button
         className="text-button"

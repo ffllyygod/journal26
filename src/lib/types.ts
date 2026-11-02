@@ -101,6 +101,8 @@ export type Workspace = {
   applications: Application[];
   learning: LearningNote[];
   weeklyNotes: Record<string, string>;
+  /** One change to make, keyed by the Monday of the week it applies to. Shown on Today all that week. */
+  weeklyCommitments: Record<string, string>;
   urges: Urge[];
 };
 export type UpdateWorkspace = (updater: (current: Workspace) => Workspace) => void;

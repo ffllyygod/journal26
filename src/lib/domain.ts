@@ -112,6 +112,7 @@ export function createWorkspace(start = todayIn()): Workspace {
     applications: [],
     learning: [],
     weeklyNotes: {},
+    weeklyCommitments: {},
     urges: [],
   };
 }
@@ -137,6 +138,7 @@ export function normalizeWorkspace(doc: Workspace): Workspace {
       rulesChecked: trade.rulesChecked ?? [],
     })),
     urges: doc.urges ?? [],
+    weeklyCommitments: doc.weeklyCommitments ?? {},
   };
 }
 /** Approximate market session for an instant, by UTC hour. Editable on the trade form. */
@@ -182,6 +184,7 @@ export function tradeStats(trades: Trade[]) {
   };
 }
 export function hours(minutes: number): string {
+  if (minutes > 0 && minutes < 60) return `${minutes}m`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60 ? `${minutes % 60}m` : ''}`.trim();
 }
 export function money(amount: number, currency = 'USD'): string {

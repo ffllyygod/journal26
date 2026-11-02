@@ -3,7 +3,15 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 const MOCK = 'http://localhost:54399';
 const row = async (page: Page) => (await page.request.get(`${MOCK}/__row`)).json();
 const synced = (page: Page) => expect(page.locator('.save-status')).toContainText('All changes saved');
-const journal = (page: Page) => page.getByLabel('Daily journal');
+/** The journal step opens only when it is next, so open it before touching it. */
+async function openStep(page: Page, name: string) {
+  const step = page.locator('.loop-step', { hasText: name });
+  if ((await step.getAttribute('aria-expanded')) === 'false') await step.click();
+}
+async function journal(page: Page) {
+  await openStep(page, 'Journal');
+  return page.getByLabel('Daily journal');
+}
 
 async function signIn(page: Page) {
   await page.goto('/login');
@@ -11,6 +19,12 @@ async function signIn(page: Page) {
   await page.getByLabel('Password').fill('correct horse battery');
   await page.getByRole('button', { name: /Open my journal/ }).click();
   await expect(page).toHaveURL(/\/journal$/);
+  // Only the first sign-in on an empty journal sees setup.
+  await expect(page.locator('.day-loop, .setup-card').first()).toBeVisible();
+  if (await page.locator('.setup-card').count()) {
+    await page.getByRole('button', { name: 'Start the challenge' }).click();
+    await synced(page);
+  }
   await expect(page.locator('.day-loop')).toBeVisible();
 }
 /** Two tabs of one signed-in browser: both start from the same revision. */
@@ -44,16 +58,16 @@ test('the demo is not reachable once the private journal is connected', async ({
 
 test('entries save to the cloud and return after reload', async ({ page }) => {
   await signIn(page);
-  await journal(page).fill('First real entry.');
+  await (await journal(page)).fill('First real entry.');
   await synced(page);
   expect((await row(page)).revision).toBeGreaterThan(0);
   await page.reload();
-  await expect(journal(page)).toHaveValue('First real entry.');
+  await expect(await journal(page)).toHaveValue('First real entry.');
 });
 
 test('edits to different fields on two devices merge with no prompt', async ({ context }) => {
   const { a, b } = await twoDevices(context);
-  await journal(b).fill('Written on the phone.');
+  await (await journal(b)).fill('Written on the phone.');
   await synced(b);
   await a.getByLabel('Priority 1').fill('Set on the laptop');
   await synced(a);
@@ -62,15 +76,16 @@ test('edits to different fields on two devices merge with no prompt', async ({ c
   const day = Object.values<{ journal: string; priorities: string[] }>(stored.days)[0];
   expect(day.journal).toBe('Written on the phone.');
   expect(day.priorities[0]).toBe('Set on the laptop');
-  await expect(journal(a)).toHaveValue('Written on the phone.');
+  await expect(await journal(a)).toHaveValue('Written on the phone.');
 });
 
 test('planning tomorrow on one device and journaling on another does not prompt', async ({ context }) => {
   const { a, b } = await twoDevices(context);
+  await openStep(b, 'Tomorrow');
   await b.getByRole('button', { name: 'Plan tomorrow', exact: true }).click();
   await b.getByLabel('Priority 1').fill('Planned on the laptop');
   await synced(b);
-  await journal(a).fill('Journaled on the phone.');
+  await (await journal(a)).fill('Journaled on the phone.');
   await synced(a);
   await expect(a.locator('.save-alert')).toHaveCount(0);
   const days = Object.values<{ journal: string; priorities: string[] }>((await row(a)).document.days);
@@ -78,14 +93,30 @@ test('planning tomorrow on one device and journaling on another does not prompt'
   expect(days.some(day => day.priorities[0] === 'Planned on the laptop')).toBe(true);
 });
 
+test('first sign-in sets up the challenge, and it is not asked again', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill('me@example.com');
+  await page.getByLabel('Password').fill('correct horse battery');
+  await page.getByRole('button', { name: /Open my journal/ }).click();
+  await page.getByLabel('Your name').fill('Sam');
+  await page.getByLabel('First habit to quit').fill('First habit');
+  await page.getByRole('button', { name: 'Start the challenge' }).click();
+  await expect(page.locator('h1')).toContainText('Day 1 of 60');
+  await synced(page);
+  await page.reload();
+  await expect(page.locator('.day-loop')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'First habit' })).toBeVisible();
+  expect((await row(page)).document.settings.name).toBe('Sam');
+});
+
 test('the same field on two devices asks, and keeping this device wins without losing the rest', async ({
   context,
 }) => {
   const { a, b } = await twoDevices(context);
-  await journal(b).fill('Phone words.');
+  await (await journal(b)).fill('Phone words.');
   await b.getByLabel('Priority 2').fill('Phone priority');
   await synced(b);
-  await journal(a).fill('Laptop words.');
+  await (await journal(a)).fill('Laptop words.');
   await expect(a.locator('.save-alert')).toContainText('Two devices changed the same thing');
   await expect(a.locator('.conflict-list')).toContainText('journal');
   await a.getByRole('button', { name: /Keep this device/ }).click();
@@ -97,10 +128,10 @@ test('the same field on two devices asks, and keeping this device wins without l
 
 test('returning to a stale tab pulls the latest automatically', async ({ context }) => {
   const { a, b } = await twoDevices(context);
-  await journal(b).fill('Fresh from the other device.');
+  await (await journal(b)).fill('Fresh from the other device.');
   await synced(b);
   await a.evaluate(() => window.dispatchEvent(new Event('focus')));
-  await expect(journal(a)).toHaveValue('Fresh from the other device.');
+  await expect(await journal(a)).toHaveValue('Fresh from the other device.');
 });
 
 test('offline edits retry, and survive the tab being closed', async ({ context }) => {
@@ -109,14 +140,14 @@ test('offline edits retry, and survive the tab being closed', async ({ context }
   await context.route('**/rest/v1/workspaces**', route =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
-  await journal(page).fill('Typed with no signal.');
+  await (await journal(page)).fill('Typed with no signal.');
   await expect(page.locator('.save-alert')).toContainText('kept on this device');
   await page.close();
   await context.unroute('**/rest/v1/workspaces**');
 
   const reopened = await context.newPage();
   await reopened.goto('/journal');
-  await expect(journal(reopened)).toHaveValue('Typed with no signal.');
+  await expect(await journal(reopened)).toHaveValue('Typed with no signal.');
   await synced(reopened);
   const day = Object.values<{ journal: string }>((await row(reopened)).document.days)[0];
   expect(day.journal).toBe('Typed with no signal.');
@@ -128,7 +159,7 @@ test('a dropped connection recovers by itself when it returns', async ({ context
   await context.route('**/rest/v1/workspaces**', route =>
     route.request().method() === 'PATCH' ? route.abort() : route.continue(),
   );
-  await journal(page).fill('Patchy network.');
+  await (await journal(page)).fill('Patchy network.');
   await expect(page.locator('.save-alert')).toBeVisible();
   await context.unroute('**/rest/v1/workspaces**');
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
@@ -138,7 +169,7 @@ test('a dropped connection recovers by itself when it returns', async ({ context
 
 test('signing out removes access and the local draft', async ({ page }) => {
   await signIn(page);
-  await journal(page).fill('Private.');
+  await (await journal(page)).fill('Private.');
   await synced(page);
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login$/);

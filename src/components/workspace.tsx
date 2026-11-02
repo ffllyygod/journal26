@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { addDays, currentDay, dayDifference, formatDate } from '@/lib/domain';
+import { addDays, currentDay, dayDifference, formatDate, weekStart } from '@/lib/domain';
 import { describeConflict } from '@/lib/merge';
 import { exportJson } from '@/lib/export';
 import { useWorkspace } from '@/lib/use-workspace';
@@ -14,14 +14,17 @@ import { Career } from './career';
 import { Review } from './review';
 import { Settings } from './settings';
 import { UrgeButton } from './urge';
+import { Board } from './board';
+import { forgetFocusSession } from './focus';
+import { Setup } from './setup';
 import { Icon, type IconName } from './ui';
 
 const navigation: { id: View; label: string; icon: IconName }[] = [
-  { id: 'today', label: 'My day', icon: 'sun' },
+  { id: 'today', label: 'Today', icon: 'sun' },
   { id: 'journal', label: 'Journal', icon: 'book' },
-  { id: 'trades', label: 'Trade journal', icon: 'chart' },
+  { id: 'trades', label: 'Trades', icon: 'chart' },
   { id: 'career', label: 'Career', icon: 'briefcase' },
-  { id: 'review', label: 'Weekly review', icon: 'review' },
+  { id: 'review', label: 'Review', icon: 'review' },
 ];
 export function Workspace({ demo = false, userId }: { demo?: boolean; userId?: string }) {
   const store = useWorkspace({ demo, userId });
@@ -29,13 +32,11 @@ export function Workspace({ demo = false, userId }: { demo?: boolean; userId?: s
     return (
       <main className="loading-page">
         <Link href="/" className="brand">
-          journal<span>26</span>
-          <i />
+          journal26
         </Link>
         <div className="panel loading-panel">
-          <Icon name={store.error ? 'lock' : 'leaf'} size={30} />
-          <h1>{store.error ? 'Your journal is still safe.' : 'Opening a fresh page…'}</h1>
-          <p>{store.error || 'A moment to settle in.'}</p>
+          <h1>{store.error ? 'Could not open your journal' : 'Opening your journal…'}</h1>
+          {store.error && <p>{store.error}</p>}
           {store.error && (
             <div className="inline">
               <button className="button button-primary" onClick={store.retry}>
@@ -107,34 +108,22 @@ function WorkspaceContent({
   }, []);
   const today = currentDay(data.settings);
   const date = selectedDate ?? today;
-  const challengeDay = dayDifference(data.settings.startDate, today) + 1;
-  const progress = Math.min(100, (Math.max(0, challengeDay - 1) / data.settings.duration) * 100);
-  const dayLabel =
-    challengeDay < 1
-      ? 'Starts soon'
-      : challengeDay > data.settings.duration
-        ? 'Challenge complete'
-        : `Day ${String(challengeDay).padStart(2, '0')} of ${data.settings.duration}`;
-  const titles: Record<View, string> = {
-    today:
-      date === today
-        ? `A new day${data.settings.name ? `, ${data.settings.name}` : ''}.`
-        : date > today
-          ? 'A little ahead of yourself.'
-          : 'A day worth remembering.',
-    journal: 'Your story, in your words.',
-    trades: 'Trade. Reflect. Refine.',
-    career: 'Build your next chapter.',
-    review: 'Look back. Move forward.',
-    settings: 'Make this space your own.',
-  };
-  const subtitles: Record<View, string> = {
-    today: 'You don’t have to do everything. Just the things that matter.',
-    journal: 'An honest record of the days that are shaping you.',
-    trades: 'Understand your decisions, one setup at a time.',
-    career: 'Small steps toward a role that’s right for you.',
-    review: 'Notice the patterns. Take the lessons into next week.',
-    settings: 'Your intentions, your pace, your journal.',
+  const viewedDay = dayDifference(data.settings.startDate, date) + 1;
+  const viewedLabel =
+    viewedDay < 1
+      ? `${1 - viewedDay} days before the start`
+      : viewedDay > data.settings.duration
+        ? 'After the challenge'
+        : `Day ${viewedDay} of ${data.settings.duration}`;
+  const reviewStart = weekStart(date);
+  const shortDate = (value: string) => formatDate(value, { month: 'short', day: 'numeric' });
+  const headings: Record<View, { title: string; note?: string }> = {
+    today: { title: viewedLabel, note: formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' }) },
+    journal: { title: 'Journal' },
+    trades: { title: 'Trades' },
+    career: { title: 'Career' },
+    review: { title: 'Review', note: `${shortDate(reviewStart)} to ${shortDate(addDays(reviewStart, 6))}` },
+    settings: { title: 'Settings' },
   };
   const props = { data, update, date, demo, userId };
   function navigate(next: View) {
@@ -155,6 +144,7 @@ function WorkspaceContent({
       const { error } = await createClient().auth.signOut();
       if (error) throw error;
       forgetDevice();
+      forgetFocusSession();
       // A full page load drops every in-memory copy of the journal from this tab.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign('/login');
@@ -163,6 +153,9 @@ function WorkspaceContent({
       setSigningOut(false);
     }
   }
+  if (!data.settings.configured) return <Setup data={data} update={update} today={today} />;
+  const step = view === 'review' ? 7 : 1;
+  const unit = view === 'review' ? 'week' : 'day';
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
@@ -170,19 +163,8 @@ function WorkspaceContent({
       </a>
       <aside className="sidebar">
         <a className="brand" href={demo ? '/demo' : '/journal'}>
-          journal<span>26</span>
-          <i />
+          journal26
         </a>
-        <span className="brand-caption">A LITTLE BETTER, EVERY DAY.</span>
-        <div className="challenge-badge">
-          <span className="challenge-badge-icon">
-            <Icon name="leaf" size={18} />
-          </span>
-          <div>
-            <span>THE TWO-MONTH CHAPTER</span>
-            <strong>{dayLabel}</strong>
-          </div>
-        </div>
         <nav aria-label="Main navigation">
           {navigation.map(item => (
             <button
@@ -191,36 +173,22 @@ function WorkspaceContent({
               aria-current={view === item.id ? 'page' : undefined}
               onClick={() => navigate(item.id)}
             >
-              <Icon name={item.icon} size={19} />
+              <Icon name={item.icon} size={18} />
               <span>{item.label}</span>
-              {view === item.id && <span className="nav-active-dot" />}
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-quote">
-            <span className="quote-mark">“</span>
-            <p>{data.settings.intention}</p>
-            <div className="challenge-progress">
-              <span style={{ width: `${progress}%` }} />
-            </div>
-            <span>
-              {Math.max(0, data.settings.duration - Math.max(0, challengeDay - 1))} days of possibility
-            </span>
-          </div>
+          <p className="own-words sidebar-why">{data.settings.intention}</p>
           <button
             className={`nav-item settings-nav ${view === 'settings' ? 'active' : ''}`}
             onClick={() => navigate('settings')}
           >
             <Icon name="settings" size={18} />
-            <span>Settings & exports</span>
+            <span>Settings</span>
           </button>
           <div className="profile">
-            <span className="avatar">{(data.settings.name || 'J').slice(0, 1).toUpperCase()}</span>
-            <div>
-              <strong>{data.settings.name || 'Your private space'}</strong>
-              <span>{demo ? 'Browser demo' : 'Personal workspace'}</span>
-            </div>
+            <strong>{data.settings.name || 'Signed in'}</strong>
             {!demo && (
               <button
                 className="icon-button"
@@ -228,7 +196,7 @@ function WorkspaceContent({
                 disabled={signingOut}
                 aria-label="Sign out"
               >
-                <Icon name="logout" size={17} />
+                <Icon name="logout" size={16} />
               </button>
             )}
           </div>
@@ -236,130 +204,107 @@ function WorkspaceContent({
       </aside>
       <div className="app-body">
         <header className="topbar">
-          <div className="breadcrumb">
-            <span>Your space</span>
-            <Icon name="chevron" size={12} />
-            <strong>{view === 'settings' ? 'Settings' : navigation.find(n => n.id === view)?.label}</strong>
-          </div>
-          <div className="topbar-right">
-            <span className={`save-status ${status}`} aria-live="polite">
-              <span />
-              {status === 'saved'
-                ? demo
-                  ? 'Saved on this device'
-                  : 'All changes saved'
-                : status === 'saving'
-                  ? 'Saving…'
-                  : status === 'conflict'
-                    ? 'Sync conflict'
-                    : 'Changes not saved'}
-            </span>
-            <span className="topbar-date">
-              {formatDate(today, { month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
-            <button
-              className="icon-button mobile-settings"
-              onClick={() => navigate('settings')}
-              aria-label="Settings"
-            >
-              <Icon name="settings" size={19} />
-            </button>
-          </div>
+          <a className="brand topbar-brand" href={demo ? '/demo' : '/journal'}>
+            journal26
+          </a>
+          <span className={`save-status ${status}`} aria-live="polite">
+            <span />
+            {status === 'saved'
+              ? demo
+                ? 'Saved on this device'
+                : 'All changes saved'
+              : status === 'saving'
+                ? 'Saving…'
+                : status === 'conflict'
+                  ? 'Sync conflict'
+                  : 'Changes not saved'}
+          </span>
+          <button
+            className="icon-button mobile-settings"
+            onClick={() => navigate('settings')}
+            aria-label="Settings"
+          >
+            <Icon name="settings" size={18} />
+          </button>
         </header>
-        {demo && (
-          <div className="demo-strip">
-            <span>
-              <strong>Demo workspace</strong> · Sample content. Edits stay in this browser.
-            </span>
-            <a href="/login">
-              Private sign-in <Icon name="arrow" size={13} />
-            </a>
-          </div>
-        )}
-        {notice && !error && (
-          <div className="sync-notice" role="status">
-            {notice}
-          </div>
-        )}
-        {(error || signOutError) && (
-          <div className="save-alert" role="alert">
-            <div>
-              <strong>
-                {status === 'conflict' ? 'Two devices changed the same thing.' : 'Not synced yet.'}
-              </strong>
-              <p>{error || signOutError}</p>
-              {conflicts.length > 0 && (
-                <ul className="conflict-list">
-                  {conflicts.map(path => (
-                    <li key={path}>{describeConflict(path)}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="inline">
-              <button className="button button-secondary button-small" onClick={() => exportJson(data)}>
-                Export my draft
-              </button>
-              {status === 'conflict' ? (
-                <>
-                  <button className="button button-secondary button-small" onClick={reload}>
-                    Use the cloud version
-                  </button>
-                  {conflicts.length > 0 && (
-                    <button className="button button-primary button-small" onClick={keepMine}>
-                      Keep this device&rsquo;s
-                    </button>
-                  )}
-                </>
-              ) : (
-                <button className="button button-primary button-small" onClick={retry}>
-                  Retry now
-                </button>
-              )}
-            </div>
-          </div>
-        )}
         <main id="main" className="main-content">
+          {demo && (
+            <div className="demo-strip">
+              <span>Sample data. Edits stay in this browser.</span>
+              <a href="/login">Sign in</a>
+            </div>
+          )}
+          {notice && !error && (
+            <div className="sync-notice" role="status">
+              {notice}
+            </div>
+          )}
+          {(error || signOutError) && (
+            <div className="save-alert" role="alert">
+              <div>
+                <strong>
+                  {status === 'conflict' ? 'Two devices changed the same thing' : 'Not synced yet'}
+                </strong>
+                <p>{error || signOutError}</p>
+                {conflicts.length > 0 && (
+                  <ul className="conflict-list">
+                    {conflicts.map(path => (
+                      <li key={path}>{describeConflict(path)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="inline">
+                <button className="button button-secondary button-small" onClick={() => exportJson(data)}>
+                  Export my draft
+                </button>
+                {status === 'conflict' ? (
+                  <>
+                    <button className="button button-secondary button-small" onClick={reload}>
+                      Use the cloud version
+                    </button>
+                    {conflicts.length > 0 && (
+                      <button className="button button-primary button-small" onClick={keepMine}>
+                        Keep this device’s
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button className="button button-primary button-small" onClick={retry}>
+                    Retry now
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="page-heading">
             <div>
-              <span className="eyebrow">
-                {view === 'today'
-                  ? `${formatDate(date, { weekday: 'long' }).toUpperCase()} / ${formatDate(date, { month: 'long', day: 'numeric' }).toUpperCase()}`
-                  : view === 'review'
-                    ? 'THE BIGGER PICTURE'
-                    : view === 'settings'
-                      ? 'A SPACE THAT FITS YOU'
-                      : 'THE WORK BEHIND THE PROGRESS'}
-              </span>
-              <h1>{titles[view]}</h1>
-              <p>{subtitles[view]}</p>
+              <h1>{headings[view].title}</h1>
+              {headings[view].note && <p>{headings[view].note}</p>}
             </div>
             {(view === 'today' || view === 'journal' || view === 'review') && (
               <div className="date-controls">
                 <button
                   className="icon-button"
-                  aria-label="Previous day"
-                  onClick={() => setSelectedDate(addDays(date, view === 'review' ? -7 : -1))}
+                  aria-label={`Previous ${unit}`}
+                  onClick={() => setSelectedDate(addDays(date, -step))}
                 >
-                  <Icon name="chevron" size={16} style={{ transform: 'rotate(180deg)' }} />
+                  <Icon name="chevron" size={15} style={{ transform: 'rotate(180deg)' }} />
                 </button>
-                <label className="date-picker">
-                  <Icon name="review" size={15} />
-                  <input
-                    type="date"
-                    aria-label="Selected date"
-                    value={date}
-                    onChange={e => {
-                      if (e.target.value) setSelectedDate(e.target.value);
-                    }}
-                  />
-                </label>
+                <input
+                  type="date"
+                  aria-label="Selected date"
+                  value={date}
+                  onChange={e => {
+                    if (e.target.value) setSelectedDate(e.target.value);
+                  }}
+                />
                 <button
                   className="icon-button"
-                  aria-label="Next day"
-                  onClick={() => setSelectedDate(addDays(date, view === 'review' ? 7 : 1))}
+                  aria-label={`Next ${unit}`}
+                  onClick={() => setSelectedDate(addDays(date, step))}
                 >
-                  <Icon name="chevron" size={16} />
+                  <Icon name="chevron" size={15} />
                 </button>
                 {date !== today && (
                   <button className="today-button" onClick={() => setSelectedDate(null)}>
@@ -369,19 +314,10 @@ function WorkspaceContent({
               </div>
             )}
           </div>
-          {!data.settings.configured && view !== 'settings' && (
-            <div className="onboarding-banner">
-              <div>
-                <strong>Your first chapter starts here.</strong>
-                <p>Set your name, start date, and daily intentions. Everything stays editable.</p>
-              </div>
-              <button className="button button-primary button-small" onClick={() => navigate('settings')}>
-                Make it mine <Icon name="arrow" size={15} />
-              </button>
-            </div>
-          )}
+          {view === 'today' && <Board data={data} date={date} today={today} onSelect={setSelectedDate} />}
           {view === 'today' && (
             <Daily
+              key={date}
               {...props}
               onPlanTomorrow={() => {
                 setSelectedDate(addDays(today, 1));
@@ -396,12 +332,6 @@ function WorkspaceContent({
           {view === 'career' && <Career {...props} />}
           {view === 'review' && <Review {...props} />}
           {view === 'settings' && <Settings {...props} />}
-          <footer className="page-footer">
-            <span>Progress is a practice, not a perfect streak.</span>
-            <span>
-              ONE DAY AT A TIME <Icon name="leaf" size={13} />
-            </span>
-          </footer>
         </main>
       </div>
       <UrgeButton data={data} update={update} today={today} />
@@ -414,7 +344,7 @@ function WorkspaceContent({
             onClick={() => navigate(item.id)}
           >
             <Icon name={item.icon} size={19} />
-            <span>{item.id === 'review' ? 'Review' : item.id === 'trades' ? 'Trades' : item.label}</span>
+            <span>{item.label}</span>
           </button>
         ))}
       </nav>

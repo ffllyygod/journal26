@@ -61,7 +61,13 @@ export function TradeEditor({
   const [rr, setRr] = useState<number | null>(trade ? plannedRR(trade) : null);
   const [error, setError] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [followedPlan, setFollowedPlan] = useState(trade?.followedPlan ?? 'unset');
   const close = () => {
+    if (uploading) {
+      setError('Wait for the image upload to finish before closing this trade.');
+      return;
+    }
     if (!dirty || window.confirm('Discard changes to this trade?')) onClose();
   };
   const guard = dayGuardrails(trades, trade?.date ?? date, settings);
@@ -81,6 +87,10 @@ export function TradeEditor({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (uploading) {
+      setError('Wait for the image upload to finish before saving this trade.');
+      return;
+    }
     const form = new FormData(event.currentTarget);
     const text = (key: string) => String(form.get(key) ?? '').trim();
     const number = (key: string) => (text(key) === '' ? null : Number(text(key)));
@@ -134,275 +144,324 @@ export function TradeEditor({
     });
   }
 
+  const planSelect = (label: string, hint?: string) => (
+    <Field label={label} hint={hint}>
+      <select
+        name="followedPlan"
+        value={followedPlan}
+        onChange={e => setFollowedPlan(e.target.value as Trade['followedPlan'])}
+      >
+        <option value="unset">Not recorded</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </Field>
+  );
+  const when = (
+    <>
+      <Field label="Date">
+        <input name="date" type="date" defaultValue={trade?.date ?? date} required />
+      </Field>
+      <Field label="Entry time">
+        <input name="time" type="time" defaultValue={trade?.time ?? defaults.time} />
+      </Field>
+      <Field label="Session">
+        <select name="session" defaultValue={trade?.session ?? defaults.session}>
+          <option value="">Not recorded</option>
+          {Object.entries(SESSION_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Position size" hint="With units: 0.01 lots, 0.02 BTC">
+        <input name="size" defaultValue={trade?.size ?? ''} maxLength={80} />
+      </Field>
+    </>
+  );
+  const entrySection = (
+    <>
+      <div className="form-grid form-grid-three">
+        <Field label="Market">
+          <input
+            name="symbol"
+            list="trade-symbols"
+            defaultValue={trade?.symbol ?? settings.symbols[0] ?? ''}
+            required
+            maxLength={20}
+            autoCapitalize="characters"
+          />
+          <datalist id="trade-symbols">
+            {settings.symbols.map(symbol => (
+              <option key={symbol} value={symbol} />
+            ))}
+          </datalist>
+        </Field>
+        <Field label="Direction">
+          <select name="direction" defaultValue={trade?.direction ?? 'long'}>
+            <option value="long">Long</option>
+            <option value="short">Short</option>
+          </select>
+        </Field>
+        <Field label="Account">
+          <select name="account" defaultValue={trade?.account ?? defaultAccount}>
+            <option value="demo">Demo</option>
+            <option value="live">Live</option>
+          </select>
+        </Field>
+        <Field label="Entry">
+          <input
+            name="entry"
+            type="number"
+            min="0.00000001"
+            step="any"
+            defaultValue={trade?.entry}
+            required
+            inputMode="decimal"
+          />
+        </Field>
+        <Field label="Stop">
+          <input
+            name="stop"
+            type="number"
+            min="0.00000001"
+            step="any"
+            defaultValue={trade?.stop ?? ''}
+            inputMode="decimal"
+          />
+        </Field>
+        <Field label="Target">
+          <input
+            name="target"
+            type="number"
+            min="0.00000001"
+            step="any"
+            defaultValue={trade?.target ?? ''}
+            inputMode="decimal"
+          />
+        </Field>
+      </div>
+      <p className="planned-rr" aria-live="polite">
+        {rr === null
+          ? 'Add a stop and target to see reward to risk.'
+          : `Reward to risk is 1 : ${rr.toFixed(2)}`}
+      </p>
+      <div className="form-grid form-grid-three">
+        <Field label={`Risk (${currency})`} hint="Used to calculate R">
+          <input
+            name="risk"
+            type="number"
+            min="0.00000001"
+            step="any"
+            defaultValue={trade?.risk ?? ''}
+            inputMode="decimal"
+          />
+        </Field>
+        <Field label="Setup">
+          <input name="setup" list="trade-setups" defaultValue={trade?.setup ?? ''} maxLength={120} />
+          <datalist id="trade-setups">
+            {[...new Set(trades.map(item => item.setup).filter(Boolean))].map(setup => (
+              <option key={setup} value={setup} />
+            ))}
+          </datalist>
+        </Field>
+        <Field label="Feeling going in">
+          <select name="emotion" defaultValue={trade?.emotion ?? ''}>
+            <option value="">Not recorded</option>
+            <option>Calm</option>
+            <option>Confident</option>
+            <option>Hesitant</option>
+            <option>FOMO</option>
+            <option>Frustrated</option>
+            <option>Rushed</option>
+          </select>
+        </Field>
+      </div>
+      {settings.tradingRules.length > 0 && (
+        <fieldset className="rule-check">
+          <legend>
+            Before you enter{' '}
+            <span>
+              {rulesChecked.filter(rule => settings.tradingRules.includes(rule)).length} of{' '}
+              {settings.tradingRules.length}
+            </span>
+          </legend>
+          {settings.tradingRules.map(rule => (
+            <label key={rule}>
+              <input
+                type="checkbox"
+                checked={rulesChecked.includes(rule)}
+                onChange={() => {
+                  setRulesChecked(toggle(rulesChecked, rule));
+                  setDirty(true);
+                }}
+              />
+              <span>{rule}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <Field label="Why this trade?">
+        <textarea
+          className="own-words"
+          name="thesis"
+          rows={3}
+          maxLength={10000}
+          defaultValue={trade?.thesis ?? ''}
+          placeholder="The setup, the confirmation, what would prove it wrong"
+        />
+      </Field>
+    </>
+  );
+  const closedSection = (
+    <div className="after-trade stack">
+      <div className="form-grid form-grid-three">
+        <Field label={`Net result (${currency})`} hint="From your broker, after fees">
+          <input
+            name="netPnl"
+            type="number"
+            step="any"
+            defaultValue={trade?.netPnl ?? ''}
+            required
+            inputMode="decimal"
+            autoFocus
+          />
+        </Field>
+        <Field label="Exit">
+          <input
+            name="exit"
+            type="number"
+            min="0.00000001"
+            step="any"
+            defaultValue={trade?.exit ?? ''}
+            inputMode="decimal"
+          />
+        </Field>
+        <Field label={`Fees (${currency})`} hint="For reference only">
+          <input
+            name="fees"
+            type="number"
+            min="0"
+            step="any"
+            defaultValue={trade?.fees ?? 0}
+            inputMode="decimal"
+          />
+        </Field>
+        {planSelect('Followed the plan?')}
+        <Field label="Setup quality">
+          <select name="grade" defaultValue={trade?.grade ?? ''}>
+            <option value="">Not graded</option>
+            <option value="A">A: exactly my setup</option>
+            <option value="B">B: acceptable</option>
+            <option value="C">C: should have skipped</option>
+          </select>
+        </Field>
+      </div>
+      <div>
+        <span className="field-label">Mistakes</span>
+        <div className="tag-row">
+          {MISTAKE_TAGS.map(tag => (
+            <button
+              key={tag}
+              type="button"
+              className={`tag ${mistakes.includes(tag) ? 'tag-on' : ''}`}
+              aria-pressed={mistakes.includes(tag)}
+              onClick={() => {
+                setMistakes(toggle(mistakes, tag));
+                setDirty(true);
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Field label="Review">
+        <textarea
+          className="own-words"
+          name="review"
+          rows={3}
+          maxLength={10000}
+          defaultValue={trade?.review ?? ''}
+          placeholder="What went well? What changes next time?"
+        />
+      </Field>
+    </div>
+  );
+
   return (
-    <Modal title={trade ? 'Review your trade' : 'Record a trade'} onClose={close} wide>
+    <Modal
+      title={
+        !trade
+          ? 'Log a trade'
+          : status === 'open'
+            ? `${trade.symbol}: open position`
+            : `${trade.symbol}: review`
+      }
+      onClose={close}
+      wide
+    >
       {!trade && (guard.tradeLimitHit || guard.lossLimitHit) && (
         <div className="guard-alert" role="alert">
-          <Icon name="flame" size={18} />
           <div>
             <strong>
               {guard.lossLimitHit
                 ? 'Your daily loss limit is hit.'
-                : 'You have reached your trade limit for today.'}
+                : 'You have reached your trade limit today.'}
             </strong>
-            <p>
-              You set this rule with a clear head. If you still take this trade, log it honestly and tag why.
-            </p>
+            <p>You set this rule with a clear head. If you still take this trade, log it and tag why.</p>
           </div>
         </div>
       )}
       <form onSubmit={submit} onChange={onFormChange} className="stack">
-        <div className="form-grid">
-          <Field label="Trade date">
-            <input name="date" type="date" defaultValue={trade?.date ?? date} required />
-          </Field>
-          <Field label="Entry time">
-            <input name="time" type="time" defaultValue={trade?.time ?? defaults.time} />
-          </Field>
-          <Field label="Market">
-            <input
-              name="symbol"
-              list="trade-symbols"
-              defaultValue={trade?.symbol ?? settings.symbols[0] ?? ''}
-              required
-              maxLength={20}
-              autoCapitalize="characters"
-            />
-            <datalist id="trade-symbols">
-              {settings.symbols.map(symbol => (
-                <option key={symbol} value={symbol} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label="Session">
-            <select name="session" defaultValue={trade?.session ?? defaults.session}>
-              <option value="">Not recorded</option>
-              {Object.entries(SESSION_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Account">
-            <select name="account" defaultValue={trade?.account ?? defaultAccount}>
-              <option value="demo">Demo / paper</option>
-              <option value="live">Live account</option>
-            </select>
-          </Field>
-          <Field label="Direction">
-            <select name="direction" defaultValue={trade?.direction ?? 'long'}>
-              <option value="long">Long / buy</option>
-              <option value="short">Short / sell</option>
-            </select>
-          </Field>
-          <Field label="Status">
-            <select value={status} onChange={e => setStatus(e.target.value as Trade['status'])}>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-          </Field>
-          <Field label="Setup / strategy">
-            <input
-              name="setup"
-              list="trade-setups"
-              defaultValue={trade?.setup ?? ''}
-              maxLength={120}
-              placeholder="e.g. Break and retest"
-            />
-            <datalist id="trade-setups">
-              {[...new Set(trades.map(item => item.setup).filter(Boolean))].map(setup => (
-                <option key={setup} value={setup} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label="Entry price">
-            <input
-              name="entry"
-              type="number"
-              min="0.00000001"
-              step="any"
-              defaultValue={trade?.entry}
-              required
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label="Position size" hint="Include units, e.g. 0.01 lots or 0.02 BTC.">
-            <input name="size" defaultValue={trade?.size ?? ''} maxLength={80} placeholder="Size and units" />
-          </Field>
-          <Field label="Initial stop price">
-            <input
-              name="stop"
-              type="number"
-              min="0.00000001"
-              step="any"
-              defaultValue={trade?.stop ?? ''}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field
-            label="Target price"
-            hint={
-              rr === null
-                ? 'Add a stop and target to see planned R:R.'
-                : `Planned reward:risk is 1 : ${rr.toFixed(2)}`
-            }
+        {/* The entry fields stay mounted in one place: moving them would discard what was typed. */}
+        {status === 'open' ? (
+          <button
+            type="button"
+            className="button button-secondary button-full"
+            onClick={() => {
+              setStatus('closed');
+              setDirty(true);
+            }}
           >
-            <input
-              name="target"
-              type="number"
-              min="0.00000001"
-              step="any"
-              defaultValue={trade?.target ?? ''}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label={`Initial risk (${currency})`} hint="Money you planned to risk. Used to calculate R.">
-            <input
-              name="risk"
-              type="number"
-              min="0.00000001"
-              step="any"
-              defaultValue={trade?.risk ?? ''}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label="How did you feel going in?">
-            <select name="emotion" defaultValue={trade?.emotion ?? ''}>
-              <option value="">Not recorded</option>
-              <option>Calm</option>
-              <option>Confident</option>
-              <option>Hesitant</option>
-              <option>FOMO</option>
-              <option>Frustrated</option>
-              <option>Rushed</option>
-            </select>
-          </Field>
-        </div>
-        {settings.tradingRules.length > 0 && (
-          <fieldset className="rule-check">
-            <legend>
-              Before you enter{' '}
-              <span>
-                {rulesChecked.filter(rule => settings.tradingRules.includes(rule)).length} of{' '}
-                {settings.tradingRules.length}
-              </span>
-            </legend>
-            {settings.tradingRules.map(rule => (
-              <label key={rule}>
-                <input
-                  type="checkbox"
-                  checked={rulesChecked.includes(rule)}
-                  onChange={() => {
-                    setRulesChecked(toggle(rulesChecked, rule));
-                    setDirty(true);
-                  }}
-                />
-                <span>{rule}</span>
-              </label>
-            ))}
-          </fieldset>
+            {trade ? 'Close this trade' : 'Already closed? Add the result'}
+          </button>
+        ) : (
+          <>
+            {closedSection}
+            <button type="button" className="text-button" onClick={() => setStatus('open')}>
+              Still open
+            </button>
+          </>
         )}
-        <Field label="Why this trade?">
-          <textarea
-            name="thesis"
-            rows={3}
-            maxLength={10000}
-            defaultValue={trade?.thesis ?? ''}
-            placeholder="The setup, confirmation, and what would invalidate the idea…"
-          />
-        </Field>
-        {status === 'closed' && (
-          <div className="after-trade stack">
-            <span className="eyebrow">AFTER THE TRADE</span>
-            <div className="form-grid">
-              <Field label="Exit price">
-                <input
-                  name="exit"
-                  type="number"
-                  min="0.00000001"
-                  step="any"
-                  defaultValue={trade?.exit ?? ''}
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field
-                label={`Net result (${currency})`}
-                hint="Copy your broker's result after fees. Negative for a loss."
-              >
-                <input
-                  name="netPnl"
-                  type="number"
-                  step="any"
-                  defaultValue={trade?.netPnl ?? ''}
-                  required
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field label={`Fees (${currency})`} hint="For reference; already included in your net result.">
-                <input
-                  name="fees"
-                  type="number"
-                  min="0"
-                  step="any"
-                  defaultValue={trade?.fees ?? 0}
-                  inputMode="decimal"
-                />
-              </Field>
-              <Field label="Did you follow your plan?">
-                <select name="followedPlan" defaultValue={trade?.followedPlan ?? 'unset'}>
-                  <option value="unset">Not reviewed yet</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </Field>
-              <Field label="Setup quality">
-                <select name="grade" defaultValue={trade?.grade ?? ''}>
-                  <option value="">Not graded</option>
-                  <option value="A">A: exactly my setup</option>
-                  <option value="B">B: acceptable</option>
-                  <option value="C">C: should have skipped</option>
-                </select>
-              </Field>
-            </div>
-            <div>
-              <span className="field-label">Mistakes, if any</span>
-              <div className="tag-row">
-                {MISTAKE_TAGS.map(tag => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`tag ${mistakes.includes(tag) ? 'tag-on' : ''}`}
-                    aria-pressed={mistakes.includes(tag)}
-                    onClick={() => {
-                      setMistakes(toggle(mistakes, tag));
-                      setDirty(true);
-                    }}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Field label="Review & lesson">
-              <textarea
-                name="review"
-                rows={3}
-                maxLength={10000}
-                defaultValue={trade?.review ?? ''}
-                placeholder="What did you execute well? What will you do differently?"
-              />
-            </Field>
+        <details
+          className={`details ${status === 'open' ? 'details-flat' : ''}`}
+          open={status === 'open' || !trade}
+        >
+          <summary>Entry details</summary>
+          <div className="stack">
+            {entrySection}
+            {status === 'open' &&
+              planSelect(
+                'Followed your entry plan?',
+                'Holding overnight? Answering this and giving a reason completes the day’s trade step.',
+              )}
+            <details className="details">
+              <summary>Date, time, session and size</summary>
+              <div className="form-grid">{when}</div>
+            </details>
           </div>
-        )}
+        </details>
         <div>
-          <span className="eyebrow">CHARTS & SCREENSHOTS</span>
+          <span className="field-label">Charts</span>
           <AttachmentGallery
             attachments={attachments}
             onChange={value => {
               setAttachments(value);
               setDirty(true);
             }}
+            onBusyChange={setUploading}
             demo={demo}
             userId={userId}
           />
@@ -413,11 +472,11 @@ export function TradeEditor({
           </p>
         )}
         <div className="modal-actions">
-          <button type="button" className="button button-secondary" onClick={close}>
+          <button type="button" className="button button-secondary" onClick={close} disabled={uploading}>
             Cancel
           </button>
-          <button className="button button-primary" type="submit">
-            Save trade <Icon name="check" size={17} />
+          <button className="button button-primary" type="submit" disabled={uploading}>
+            {uploading ? 'Uploading image…' : 'Save trade'}
           </button>
         </div>
       </form>
@@ -513,26 +572,24 @@ export function Trades({ data, update, date, demo, userId }: FeatureProps) {
 
   return (
     <div className="stack">
-      <SectionHeading eyebrow="LEARN FROM EVERY DECISION" title="Your trading journal">
-        <button className="button button-primary" onClick={() => setEditor({ trade: null })}>
-          <Icon name="plus" size={17} /> Log a trade
-        </button>
-      </SectionHeading>
       <div className="filter-bar">
+        <button className="button button-primary" onClick={() => setEditor({ trade: null })}>
+          <Icon name="plus" size={15} /> Log a trade
+        </button>
         <div className="segmented" role="group" aria-label="Trading account">
           <button
             className={account === 'demo' ? 'active' : ''}
             onClick={() => setAccount('demo')}
             aria-pressed={account === 'demo'}
           >
-            Demo / paper
+            Demo
           </button>
           <button
             className={account === 'live' ? 'active' : ''}
             onClick={() => setAccount('live')}
             aria-pressed={account === 'live'}
           >
-            Live account
+            Live
           </button>
         </div>
         <select aria-label="Filter period" value={period} onChange={e => setPeriod(e.target.value)}>
@@ -556,83 +613,90 @@ export function Trades({ data, update, date, demo, userId }: FeatureProps) {
           aria-label="Search trades"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search setups, notes, mistakes…"
+          placeholder="Search setups, notes, mistakes"
         />
       </div>
       {stats.lossStreak >= 2 && (
         <div className="guard-alert" role="status">
-          <Icon name="flame" size={18} />
           <div>
             <strong>{stats.lossStreak} losses in a row.</strong>
-            <p>Good moment to step away from the chart and review before the next entry.</p>
+            <p>Step away from the chart and review before the next entry.</p>
           </div>
         </div>
       )}
-      <div className="stat-grid stat-grid-six">
-        <div className="stat-card">
-          <span className="eyebrow">NET · {account.toUpperCase()}</span>
-          <strong className={stats.net < 0 ? 'negative' : ''}>
-            {stats.count ? money(stats.net, currency) : '—'}
-          </strong>
-          <small>{stats.count} closed · after fees</small>
+      {stats.count > 0 && (
+        <div className="stat-grid stat-grid-six">
+          <div className="stat-card">
+            <span className="stat-label">Net, {account}</span>
+            <strong className={stats.net < 0 ? 'negative' : ''}>
+              {stats.count ? money(stats.net, currency) : '—'}
+            </strong>
+            <small>{stats.count} closed, after fees</small>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Win rate</span>
+            <strong>{stats.winRate === null ? '—' : `${Math.round(stats.winRate)}%`}</strong>
+            <small>
+              {stats.wins} won, {stats.losses} lost, {stats.breakeven} even
+            </small>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Average R</span>
+            <strong>{signed(stats.avgR, 'R')}</strong>
+            <small>
+              {stats.rCount ? `${stats.rCount} trades with risk set` : 'Enter initial risk to measure R'}
+            </small>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Expectancy</span>
+            <strong>{stats.expectancy === null ? '—' : money(stats.expectancy, currency)}</strong>
+            <small>Average result per trade</small>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Max drawdown</span>
+            <strong>{stats.count ? money(stats.maxDrawdown, currency) : '—'}</strong>
+            <small>Profit factor {stats.profitFactor === null ? '—' : stats.profitFactor.toFixed(2)}</small>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">On plan</span>
+            <strong>{stats.adherence === null ? '—' : `${Math.round(stats.adherence)}%`}</strong>
+            <small>{stats.reviewedCount} reviewed trades</small>
+          </div>
         </div>
-        <div className="stat-card">
-          <span className="eyebrow">WIN RATE</span>
-          <strong>{stats.winRate === null ? '—' : `${Math.round(stats.winRate)}%`}</strong>
-          <small>
-            {stats.wins}W · {stats.losses}L · {stats.breakeven} BE
-          </small>
-        </div>
-        <div className="stat-card">
-          <span className="eyebrow">AVG R</span>
-          <strong>{signed(stats.avgR, 'R')}</strong>
-          <small>
-            {stats.rCount ? `${stats.rCount} trades with risk set` : 'Enter initial risk to measure R'}
-          </small>
-        </div>
-        <div className="stat-card">
-          <span className="eyebrow">EXPECTANCY</span>
-          <strong>{stats.expectancy === null ? '—' : money(stats.expectancy, currency)}</strong>
-          <small>Average result per trade</small>
-        </div>
-        <div className="stat-card">
-          <span className="eyebrow">MAX DRAWDOWN</span>
-          <strong>{stats.count ? money(stats.maxDrawdown, currency) : '—'}</strong>
-          <small>Profit factor {stats.profitFactor === null ? '—' : stats.profitFactor.toFixed(2)}</small>
-        </div>
-        <div className="stat-card">
-          <span className="eyebrow">FOLLOWED THE PLAN</span>
-          <strong>{stats.adherence === null ? '—' : `${Math.round(stats.adherence)}%`}</strong>
-          <small>{stats.reviewedCount} reviewed trades</small>
-        </div>
-      </div>
+      )}
       {stats.count > 0 && stats.count < 20 && (
         <p className="microcopy">
           Under 20 closed trades: treat these numbers as notes, not as evidence of an edge.
         </p>
       )}
-      <div className="analytics-grid">
-        <section className="panel">
-          <SectionHeading title="Cumulative result" />
-          <EquityCurve points={stats.equity} currency={currency} />
-        </section>
-        <section className="panel">
-          <SectionHeading title="What is it costing or paying?" />
-          <div className="segmented segmented-wrap" role="group" aria-label="Compare trades by">
-            {(Object.keys(CUTS) as (keyof typeof CUTS)[]).map(key => (
-              <button
-                key={key}
-                className={cut === key ? 'active' : ''}
-                aria-pressed={cut === key}
-                onClick={() => setCut(key)}
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-          <Breakdown rows={breakdown(filtered, CUTS[cut].key)} label={CUTS[cut].label} currency={currency} />
-        </section>
-      </div>
+      {stats.count > 0 && (
+        <div className="analytics-grid">
+          <section className="panel">
+            <SectionHeading title="Cumulative result" />
+            <EquityCurve points={stats.equity} currency={currency} />
+          </section>
+          <section className="panel">
+            <SectionHeading title="What pays and what costs" />
+            <div className="segmented segmented-wrap" role="group" aria-label="Compare trades by">
+              {(Object.keys(CUTS) as (keyof typeof CUTS)[]).map(key => (
+                <button
+                  key={key}
+                  className={cut === key ? 'active' : ''}
+                  aria-pressed={cut === key}
+                  onClick={() => setCut(key)}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+            <Breakdown
+              rows={breakdown(filtered, CUTS[cut].key)}
+              label={CUTS[cut].label}
+              currency={currency}
+            />
+          </section>
+        </div>
+      )}
       <section className="panel">
         <SectionHeading title="Trade log">
           <span className="chip">{filtered.length} trades</span>
@@ -640,14 +704,14 @@ export function Trades({ data, update, date, demo, userId }: FeatureProps) {
         {filtered.length === 0 ? (
           <EmptyState
             icon="chart"
-            title={data.trades.length ? 'No trades match these filters' : 'A good decision deserves a record'}
+            title={data.trades.length ? 'No trades match these filters' : 'No trades yet'}
             action={
               <button className="button button-secondary" onClick={() => setEditor({ trade: null })}>
-                Record your first trade <Icon name="arrow" size={16} />
+                Log a trade
               </button>
             }
           >
-            Log a setup, your reasoning, and a chart. You can add the result after closing the trade.
+            Log the entry now and add the result when it closes. Stats appear after the first closed trade.
           </EmptyState>
         ) : (
           <div className="trade-cards">
@@ -667,9 +731,9 @@ export function Trades({ data, update, date, demo, userId }: FeatureProps) {
                     </span>
                     <span className="muted trade-card-meta">
                       {formatDate(trade.date, { month: 'short', day: 'numeric' })}
-                      {trade.time && ` · ${trade.time}`}
-                      {trade.setup && ` · ${trade.setup}`}
-                      {trade.mistakes.length > 0 && ` · ${trade.mistakes.join(', ')}`}
+                      {trade.time && `, ${trade.time}`}
+                      {trade.setup && `, ${trade.setup}`}
+                      {trade.mistakes.length > 0 && `. ${trade.mistakes.join(', ')}`}
                     </span>
                   </button>
                   <div className="trade-card-result">

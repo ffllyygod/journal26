@@ -19,11 +19,15 @@ import {
   money,
   weekStart,
 } from '@/lib/domain';
+import { findInsights } from '@/lib/insights';
+import { Patterns } from './patterns';
 import { Field, Icon, SectionHeading } from './ui';
 
 export function Review({ data, update, date }: FeatureProps) {
   const start = weekStart(date);
   const end = addDays(start, 6);
+  const nextWeek = addDays(start, 7);
+  const commitment = data.weeklyCommitments[start];
   const today = currentDay(data.settings);
   const days = Array.from({ length: 7 }, (_, index) => {
     const key = addDays(start, index);
@@ -59,30 +63,31 @@ export function Review({ data, update, date }: FeatureProps) {
 
   return (
     <div className="stack">
-      <SectionHeading eyebrow="PAUSE. NOTICE. ADJUST." title="Your weekly reflection"></SectionHeading>
-      <p className="muted">
-        {formatDate(start, { month: 'long', day: 'numeric' })} –{' '}
-        {formatDate(end, { month: 'long', day: 'numeric', year: 'numeric' })}. Look for something to repeat
-        and one thing to change.
-      </p>
+      {commitment && (
+        <p className="week-rule">
+          <span>This week’s one change</span>
+          <span className="own-words">{commitment}</span>
+        </p>
+      )}
+      <Patterns insights={findInsights(data, today)} />
       <div className="stat-grid">
         <div className="stat-card">
-          <span className="eyebrow">FOCUSED WORK</span>
+          <span className="stat-label">Focus</span>
           <strong>{hours(careerMinutes + tradingMinutes)}</strong>
           <small>
-            {hours(careerMinutes)} career · {hours(tradingMinutes)} trading
+            {hours(careerMinutes)} career, {hours(tradingMinutes)} trading
           </small>
         </div>
         <div className="stat-card">
-          <span className="eyebrow">TASKS COMPLETED</span>
+          <span className="stat-label">Tasks done</span>
           <strong>
             {doneTasks}
             <span className="stat-denominator"> / {totalTasks}</span>
           </strong>
-          <small>Across the plans you made this week</small>
+          <small>{completeDays} full days this week</small>
         </div>
         <div className="stat-card">
-          <span className="eyebrow">DAYS REFLECTED</span>
+          <span className="stat-label">Days written</span>
           <strong>
             {journalDays}
             <span className="stat-denominator"> / {elapsed.length}</span>
@@ -93,7 +98,7 @@ export function Review({ data, update, date }: FeatureProps) {
         </div>
       </div>
       <section className="panel">
-        <SectionHeading title="Where your time went">
+        <SectionHeading title="Time">
           <div className="inline chart-legend">
             <span>
               <i className="legend-dot career-dot" />
@@ -163,8 +168,8 @@ export function Review({ data, update, date }: FeatureProps) {
         </details>
       </section>
       <section className="panel">
-        <SectionHeading title="Keep showing up">
-          <span className="muted">Unlogged days stay unknown.</span>
+        <SectionHeading title="Habits">
+          <span className="muted">Unlogged days stay unknown</span>
         </SectionHeading>
         <div className="habit-review-grid">
           {habits.map(habit => {
@@ -192,7 +197,7 @@ export function Review({ data, update, date }: FeatureProps) {
                         {!day.future && day.entry[habit.key] === 'kept' ? (
                           <Icon name="check" size={15} />
                         ) : !day.future && day.entry[habit.key] === 'slip' ? (
-                          '·'
+                          '×'
                         ) : (
                           '—'
                         )}
@@ -208,41 +213,37 @@ export function Review({ data, update, date }: FeatureProps) {
       </section>
       <div className="analytics-grid">
         <section className="panel">
-          <SectionHeading title="Trading this week" />
+          <SectionHeading title="Trading" />
           <WeekTrades trades={weekTrades} account="live" currency={data.settings.currency} />
           <WeekTrades trades={weekTrades} account="demo" currency={data.settings.currency} />
           {!weekTrades.length && <p className="muted">No trades logged this week.</p>}
         </section>
         <section className="panel">
-          <SectionHeading title="Cravings this week" />
+          <SectionHeading title="Cravings" />
           {urges.total ? (
             <>
               <p>
-                <strong>{urges.resisted}</strong> of <strong>{urges.total}</strong> rode out.{' '}
+                <strong>{urges.resisted}</strong> of <strong>{urges.total}</strong> passed.{' '}
                 {urges.slipped > 0 && `${urges.slipped} became a slip.`}
               </p>
               {urges.topTriggers.length > 0 && (
                 <p className="muted">
                   Most common:{' '}
-                  {urges.topTriggers.map(([trigger, count]) => `${trigger} (${count})`).join(', ')}. Plan
-                  ahead for it next week.
+                  {urges.topTriggers.map(([trigger, count]) => `${trigger} (${count})`).join(', ')}.
                 </p>
               )}
             </>
           ) : (
-            <p className="muted">
-              None logged. Tap Craving next time one shows up; the pattern only appears if it is recorded.
-            </p>
+            <p className="muted">None logged. Tap Craving next time one shows up.</p>
           )}
           <p className="muted review-apps">
             Applications: <strong>{applicationsThisWeek(data, start)}</strong> of{' '}
-            {data.settings.weeklyApplicationTarget} · Full days: <strong>{completeDays}</strong> of{' '}
-            {elapsed.length}
+            {data.settings.weeklyApplicationTarget}
           </p>
         </section>
       </div>
       <section className="panel">
-        <SectionHeading title="The whole challenge">
+        <SectionHeading title="Whole challenge">
           <span className="muted">{data.settings.duration} days</span>
         </SectionHeading>
         <div className="habit-review-grid">
@@ -251,7 +252,7 @@ export function Review({ data, update, date }: FeatureProps) {
               <div className="split">
                 <strong>{habit.label}</strong>
                 <span className="muted">
-                  {habitStreak(data.days, habit.key, today)} now · best{' '}
+                  {habitStreak(data.days, habit.key, today)} now, best{' '}
                   {bestStreak(data.days, habit.key, today)}
                 </span>
               </div>
@@ -276,25 +277,42 @@ export function Review({ data, update, date }: FeatureProps) {
             </div>
           ))}
         </div>
-        <p className="microcopy">Filled: kept. ×: slip. Outlined: not logged. Faint: upcoming.</p>
+        <p className="microcopy">Filled means kept, × means slip, outlined means not logged.</p>
       </section>
       <section className="panel">
-        <SectionHeading eyebrow="TAKE SOMETHING INTO NEXT WEEK" title="What did this week teach you?" />
-        <p className="muted">
-          What worked? What got in the way? Choose one adjustment you can actually make.
-        </p>
-        <Field label="Weekly reflection">
-          <textarea
-            rows={7}
-            maxLength={20000}
-            value={data.weeklyNotes[start] ?? ''}
-            onChange={e => {
-              const value = e.target.value;
-              update(current => ({ ...current, weeklyNotes: { ...current.weeklyNotes, [start]: value } }));
-            }}
-            placeholder={'A win I want to remember…\nA pattern I noticed…\nOne change for next week…'}
-          />
-        </Field>
+        <SectionHeading title="Close the week" />
+        <div className="stack">
+          <Field label="What worked, and what got in the way?">
+            <textarea
+              className="own-words"
+              rows={6}
+              maxLength={20000}
+              value={data.weeklyNotes[start] ?? ''}
+              onChange={e => {
+                const value = e.target.value;
+                update(current => ({ ...current, weeklyNotes: { ...current.weeklyNotes, [start]: value } }));
+              }}
+            />
+          </Field>
+          <Field
+            label={`One change for next week (from ${formatDate(nextWeek, { month: 'short', day: 'numeric' })})`}
+            hint="Shown at the top of Today all next week."
+          >
+            <input
+              className="own-words"
+              maxLength={200}
+              value={data.weeklyCommitments[nextWeek] ?? ''}
+              onChange={e => {
+                const value = e.target.value;
+                update(current => ({
+                  ...current,
+                  weeklyCommitments: { ...current.weeklyCommitments, [nextWeek]: value },
+                }));
+              }}
+              placeholder="No trades in the first 15 minutes after a news release"
+            />
+          </Field>
+        </div>
       </section>
     </div>
   );
@@ -315,13 +333,13 @@ function WeekTrades({
   const costliest = breakdown(scoped, trade => trade.mistakes)[0];
   return (
     <div className="week-trades">
-      <span className="eyebrow">{account === 'live' ? 'LIVE' : 'DEMO / PAPER'}</span>
+      <span className="stat-label">{account === 'live' ? 'Live' : 'Demo'}</span>
       <p>
         <strong>{stats.count ? money(stats.net, currency) : 'Open only'}</strong> from {stats.count} closed
         trade{stats.count === 1 ? '' : 's'}
-        {stats.winRate !== null && ` · ${Math.round(stats.winRate)}% wins`}
-        {stats.avgR !== null && ` · ${stats.avgR.toFixed(2)}R avg`}
-        {stats.adherence !== null && ` · ${Math.round(stats.adherence)}% to plan`}
+        {stats.winRate !== null && `, ${Math.round(stats.winRate)}% wins`}
+        {stats.avgR !== null && `, ${stats.avgR.toFixed(2)}R average`}
+        {stats.adherence !== null && `, ${Math.round(stats.adherence)}% on plan`}
       </p>
       {costliest && costliest.net < 0 && (
         <p className="muted">

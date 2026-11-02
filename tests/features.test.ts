@@ -306,7 +306,7 @@ test('urge stats rank triggers inside the range', () => {
   assert.deepEqual(stats.topTriggers[0], ['Stress', 2]);
 });
 
-test('the daily loop requires an explicit no-trade decision, and open trades keep it incomplete', () => {
+test('the daily loop requires a no-trade decision or a documented trade, not a forced exit', () => {
   const data = workspace();
   const date = '2026-11-01';
   const step = (id: string) => dayLoop(data, date).find(s => s.id === id)!.done;
@@ -315,6 +315,22 @@ test('the daily loop requires an explicit no-trade decision, and open trades kee
   assert.equal(step('trades'), true);
   data.trades = [trade({ date, status: 'open', netPnl: null })];
   assert.equal(step('trades'), false);
+  data.trades = [
+    trade({
+      date,
+      status: 'open',
+      netPnl: null,
+      thesis: 'Holding the setup overnight.',
+      followedPlan: 'yes',
+    }),
+  ];
+  assert.equal(step('trades'), true);
+  data.trades[0].followedPlan = 'unset';
+  assert.equal(step('trades'), false);
+  data.trades[0].followedPlan = 'no';
+  assert.equal(step('trades'), true, 'Honest documentation counts even when the plan was not followed');
+  data.trades = [trade({ date, review: '' })];
+  assert.equal(step('trades'), false, 'Closed positions still need outcome review');
   data.trades = [trade({ date })];
   assert.equal(step('trades'), true);
 });

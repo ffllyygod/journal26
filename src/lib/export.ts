@@ -109,5 +109,9 @@ export function exportMarkdown(data: Workspace) {
   lines.push('## Weekly reflections', '');
   for (const [week, reflection] of Object.entries(data.weeklyNotes))
     lines.push(`### Week of ${week}`, reflection, '');
+  lines.push('## One change for each week', '');
+  for (const [week, change] of Object.entries(data.weeklyCommitments))
+    if (change.trim()) lines.push(`- Week of ${week}: ${change}`);
+  lines.push('');
   download(lines.join('\n'), 'journal26-journal.md', 'text/markdown;charset=utf-8');
 }

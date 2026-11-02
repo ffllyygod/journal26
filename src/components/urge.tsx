@@ -31,7 +31,7 @@ export function UrgeButton({
   return (
     <>
       <button className="urge-fab" onClick={() => setOpen(true)}>
-        <Icon name="flame" size={18} /> <span>Craving</span>
+        <Icon name="flame" size={16} /> <span>Craving</span>
       </button>
       {open && <UrgeModal data={data} update={update} today={today} onClose={() => setOpen(false)} />}
     </>
@@ -100,9 +100,7 @@ function UrgeModal({
             {minutes}:{seconds}
           </strong>
           <span>
-            {remaining
-              ? 'Cravings rise and fall. You only need to outlast this one.'
-              : 'Time. How do you feel now?'}
+            {remaining ? 'Cravings rise and fall. Outlast this one.' : 'Time is up. Has it passed?'}
           </span>
         </div>
         {data.settings.urgePlan && (
@@ -110,7 +108,7 @@ function UrgeModal({
             <strong>Your plan:</strong> {data.settings.urgePlan}
           </p>
         )}
-        <p className="urge-why">&ldquo;{data.settings.intention}&rdquo;</p>
+        <p className="urge-why own-words">{data.settings.intention}</p>
         <ol className="urge-steps">
           {STEPS.map(step => (
             <li key={step}>{step}</li>
@@ -130,7 +128,7 @@ function UrgeModal({
           ))}
         </div>
         <div>
-          <span className="eyebrow">WHAT SET IT OFF?</span>
+          <span className="field-label">What set it off?</span>
           <div className="tag-row">
             {URGE_TRIGGERS.map(item => (
               <button
@@ -169,12 +167,9 @@ function UrgeModal({
             I slipped
           </button>
           <button type="button" className="button button-primary" onClick={() => finish('resisted')}>
-            It passed <Icon name="check" size={17} />
+            It passed
           </button>
         </div>
-        <p className="microcopy">
-          A slip is logged as a slip and your history stays. Then you start the next hour.
-        </p>
       </div>
     </Modal>
   );

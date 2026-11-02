@@ -214,7 +214,7 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
       let rowRevision = 0;
       if (demo) {
         const stored = localStorage.getItem(DEMO_KEY);
-        document = stored ? JSON.parse(stored) : createDemo(todayIn());
+        document = stored ? JSON.parse(stored) : createDemo();
         const snapshot = stored ?? JSON.stringify(document);
         if (!stored) localStorage.setItem(DEMO_KEY, snapshot);
         demoSnapshot.current = snapshot;

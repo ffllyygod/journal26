@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import type { FeatureProps, Settings as SettingsType } from '@/lib/types';
-import { addDays, formatDate, isWorkspace, normalizeWorkspace } from '@/lib/domain';
+import { isWorkspace, normalizeWorkspace } from '@/lib/domain';
 import { buildReminderCalendar } from '@/lib/reminders';
 import { exportComplete, exportJson, exportMarkdown } from '@/lib/export';
 import { Field, Icon, SectionHeading } from './ui';
@@ -111,14 +111,13 @@ export function Settings({ data, update, demo }: FeatureProps) {
   return (
     <div className="settings-layout">
       <section className="panel">
-        <SectionHeading eyebrow="MAKE IT YOURS" title="Your next chapter" />
-        <p className="section-description">A challenge that fits your life. Adjust it as you learn.</p>
+        <SectionHeading title="Challenge" />
         <form className="stack settings-form" onSubmit={save} onChange={() => setSaved(false)}>
-          <Field label="What should we call you?">
+          <Field label="Your name">
             <input
               name="name"
               defaultValue={data.settings.name}
-              placeholder="Your first name"
+
               maxLength={40}
             />
           </Field>
@@ -144,8 +143,14 @@ export function Settings({ data, update, demo }: FeatureProps) {
               />
             </Field>
           </div>
-          <Field label="Your reason for showing up">
-            <textarea name="intention" defaultValue={data.settings.intention} rows={3} maxLength={500} />
+          <Field label="Why you are doing this">
+            <textarea
+              className="own-words"
+              name="intention"
+              defaultValue={data.settings.intention}
+              rows={3}
+              maxLength={500}
+            />
           </Field>
           <div className="form-grid">
             <Field label="Career minutes per day">
@@ -186,10 +191,10 @@ export function Settings({ data, update, demo }: FeatureProps) {
             hint="All trade amounts use this currency. No automatic exchange-rate conversion."
           >
             <select name="currency" defaultValue={data.settings.currency}>
-              <option value="USD">USD · US Dollar</option>
-              <option value="INR">INR · Indian Rupee</option>
-              <option value="EUR">EUR · Euro</option>
-              <option value="GBP">GBP · British Pound</option>
+              <option value="USD">USD, US Dollar</option>
+              <option value="INR">INR, Indian Rupee</option>
+              <option value="EUR">EUR, Euro</option>
+              <option value="GBP">GBP, British Pound</option>
             </select>
           </Field>
           <h3 className="settings-group">Habits</h3>
@@ -216,11 +221,12 @@ export function Settings({ data, update, demo }: FeatureProps) {
             hint="Written now, shown on the Craving screen when you need it."
           >
             <textarea
+              className="own-words"
               name="urgePlan"
               rows={2}
               maxLength={500}
               defaultValue={data.settings.urgePlan}
-              placeholder="e.g. Go outside, drink water, do ten push-ups."
+              placeholder="Go outside, drink water, do ten push-ups"
             />
           </Field>
           <h3 className="settings-group">Trading rules</h3>
@@ -305,10 +311,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
             </p>
           )}
           <div className="inline">
-            <button className="button button-primary">
-              Save preferences
-              <Icon name="check" size={16} />
-            </button>
+            <button className="button button-primary">Save preferences</button>
             {saved && (
               <span className="success-message" role="status">
                 Preferences updated
@@ -319,8 +322,11 @@ export function Settings({ data, update, demo }: FeatureProps) {
       </section>
       <div className="stack">
         <section className="panel">
-          <SectionHeading title="Your words belong to you" />
-          <p className="section-description">Take a backup anytime. Keep exported files somewhere private.</p>
+          <SectionHeading title="Backups" />
+          <p className="section-description">
+            The free database has no backups of its own, so these files are your safety net. Keep them
+            private.
+          </p>
           <div className="export-buttons">
             <button
               className="button button-secondary"
@@ -329,7 +335,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
                 markBackup();
               }}
             >
-              <Icon name="book" size={17} /> Readable journal (.md)
+              <Icon name="book" size={15} /> Journal as Markdown
             </button>
             <button
               className="button button-secondary"
@@ -338,7 +344,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
                 markBackup();
               }}
             >
-              <Icon name="download" size={17} /> All records (.json)
+              <Icon name="download" size={15} /> All records as JSON
             </button>
             <button
               className="button button-primary"
@@ -357,7 +363,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
               }}
             >
               <Icon name="download" size={17} />
-              {exporting ? 'Packing your images…' : 'Complete backup with images'}
+              {exporting ? 'Packing images…' : 'Complete backup with images'}
             </button>
           </div>
           <p className="microcopy">
@@ -365,7 +371,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
           </p>
         </section>
         <section className="panel">
-          <SectionHeading title="Reminders on your phone" />
+          <SectionHeading title="Reminders" />
           <p className="section-description">
             Adds a morning and an evening alert to your calendar for the whole challenge. Save your times
             first, and open this on the device you want reminded.
@@ -397,22 +403,9 @@ export function Settings({ data, update, demo }: FeatureProps) {
             </p>
           )}
         </section>
-        <section className="panel settings-summary">
-          <span className="eyebrow">YOUR CHALLENGE</span>
-          <h3>{data.settings.duration} days of showing up.</h3>
-          <p>
-            {formatDate(data.settings.startDate, { month: 'short', day: 'numeric' })} —{' '}
-            {formatDate(addDays(data.settings.startDate, data.settings.duration - 1), {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </p>
-          <p className="muted">Changing the dates never erases past entries.</p>
-        </section>
         {demo && (
           <section className="panel">
-            <h3>About this demo</h3>
+            <h3>This demo</h3>
             <p className="section-description">
               Sample content and your edits stay in this browser. This demo is not password-protected or
               backed up online. Use the private workspace for personal journaling.

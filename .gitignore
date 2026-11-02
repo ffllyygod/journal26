@@ -17,3 +17,4 @@ playwright-report/
 .omc/
 .claude/
 .env.local
+.vercel

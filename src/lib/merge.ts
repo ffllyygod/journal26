@@ -112,6 +112,7 @@ export function describeConflict(path: string): string {
   if (root === 'days' && key) return `${key}${field ? ` · ${field}` : ''}`;
   if (root === 'settings') return `Settings · ${key}`;
   if (root === 'weeklyNotes') return `Weekly reflection · ${key}`;
+  if (root === 'weeklyCommitments') return `One change for the week · ${key}`;
   const list = root.match(/^(trades|applications|learning|urges)/)?.[1];
   if (list)
     return `${{ trades: 'A trade', applications: 'An application', learning: 'A learning note', urges: 'A logged urge' }[list]}${key ? ` · ${key}` : ''}`;

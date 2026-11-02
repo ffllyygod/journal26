@@ -9,10 +9,12 @@ function AttachmentImage({
   attachment,
   demo,
   onRemove,
+  removingDisabled,
 }: {
   attachment: Attachment;
   demo: boolean;
   onRemove: () => void;
+  removingDisabled: boolean;
 }) {
   const [url, setUrl] = useState('');
   const [failed, setFailed] = useState(false);
@@ -45,6 +47,7 @@ function AttachmentImage({
         type="button"
         className="attachment-remove"
         onClick={onRemove}
+        disabled={removingDisabled}
         aria-label={`Remove attachment ${attachment.name}`}
       >
         <Icon name="close" size={14} />
@@ -55,11 +58,15 @@ function AttachmentImage({
 export function AttachmentGallery({
   attachments,
   onChange,
+  onAdd,
+  onBusyChange,
   demo,
   userId,
 }: {
   attachments: Attachment[];
   onChange: (attachments: Attachment[]) => void;
+  onAdd?: (attachment: Attachment) => void;
+  onBusyChange?: (busy: boolean) => void;
   demo: boolean;
   userId?: string;
 }) {
@@ -77,18 +84,28 @@ export function AttachmentGallery({
       return;
     }
     setBusy(true);
+    onBusyChange?.(true);
     setError('');
+    // The batch belongs to the record that started it, even if its page changes.
+    let batch = [...current.current];
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
     try {
       for (const file of Array.from(files)) {
         const result = await uploadImage(file, demo, userId);
-        const next = [...current.current, result];
-        current.current = next;
-        onChange(next);
+        batch = [...batch, result];
+        if (onAdd) onAdd(result);
+        else onChange(batch);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed. Please try again.');
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
+      window.removeEventListener('beforeunload', beforeUnload);
       if (input.current) input.current.value = '';
     }
   }
@@ -102,6 +119,7 @@ export function AttachmentGallery({
               attachment={item}
               demo={demo}
               onRemove={() => onChange(current.current.filter(a => a.id !== item.id))}
+              removingDisabled={busy}
             />
           ))}
         </div>
@@ -120,10 +138,10 @@ export function AttachmentGallery({
         onClick={() => input.current?.click()}
         disabled={busy || attachments.length >= 6}
       >
-        <Icon name="image" size={17} />
+        <Icon name="image" size={15} />
         {busy ? 'Uploading image…' : 'Attach images'}
       </button>
-      <span className="attachment-hint">JPG, PNG, WebP · up to 10 MB each</span>
+      <span className="attachment-hint">JPG, PNG or WebP, up to 10 MB each</span>
       {error && (
         <p className="error-message" role="alert">
           {error}

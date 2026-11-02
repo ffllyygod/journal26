@@ -75,7 +75,7 @@ export function EquityCurve({ points, currency }: { points: EquityPoint[]; curre
           >
             <strong>{money(shown.value, currency)}</strong>
             <span>
-              Trade {shown.index} · {shown.label}
+              Trade {shown.index}, {shown.label}
             </span>
             <span>{formatDate(shown.date, { month: 'short', day: 'numeric' })}</span>
           </div>

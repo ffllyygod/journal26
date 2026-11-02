@@ -163,7 +163,11 @@ export function dayLoop(data: Workspace, date: string): LoopStep[] {
   const checkedIn = !!day && day.smoking !== 'unset' && day.abstinence !== 'unset';
   const tradesDone =
     trades.length > 0
-      ? trades.every(trade => trade.status === 'closed' && !needsReview(trade))
+      ? trades.every(trade =>
+          trade.status === 'closed'
+            ? !needsReview(trade)
+            : !!trade.thesis.trim() && trade.followedPlan !== 'unset',
+        )
       : !!day?.noTrade;
   const journaled = !!day && !!(day.journal.trim() || day.win.trim() || day.lesson.trim());
   const tomorrowPlanned =
@@ -175,7 +179,7 @@ export function dayLoop(data: Workspace, date: string): LoopStep[] {
       id: 'trades',
       label: 'Trades',
       done: tradesDone,
-      hint: trades.length ? 'Close and review trades' : 'Log a trade or mark no trade',
+      hint: trades.length ? 'Document open trades and review closed trades' : 'Log a trade or mark no trade',
     },
     { id: 'journal', label: 'Journal', done: journaled, hint: 'Write a line' },
     { id: 'tomorrow', label: 'Tomorrow', done: tomorrowPlanned, hint: 'Plan tomorrow' },
