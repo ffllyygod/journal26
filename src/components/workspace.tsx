@@ -15,6 +15,7 @@ import { Review } from './review';
 import { Settings } from './settings';
 import { UrgeButton } from './urge';
 import { Board } from './board';
+import { WritingWelcome } from './writing-welcome';
 import { forgetFocusSession } from './focus';
 import { Setup } from './setup';
 import { Icon, type IconName } from './ui';
@@ -99,6 +100,7 @@ function WorkspaceContent({
 }) {
   const [view, setView] = useState<View>('today');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [writingFocusDate, setWritingFocusDate] = useState<string | null>(null);
   const [, tick] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState('');
@@ -127,8 +129,13 @@ function WorkspaceContent({
   };
   const props = { data, update, date, demo, userId };
   function navigate(next: View) {
+    setWritingFocusDate(null);
     setView(next);
     window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  function selectDate(next: string | null) {
+    setWritingFocusDate(null);
+    setSelectedDate(next);
   }
   async function signOut() {
     if (
@@ -287,7 +294,7 @@ function WorkspaceContent({
                 <button
                   className="icon-button"
                   aria-label={`Previous ${unit}`}
-                  onClick={() => setSelectedDate(addDays(date, -step))}
+                  onClick={() => selectDate(addDays(date, -step))}
                 >
                   <Icon name="chevron" size={15} style={{ transform: 'rotate(180deg)' }} />
                 </button>
@@ -296,38 +303,52 @@ function WorkspaceContent({
                   aria-label="Selected date"
                   value={date}
                   onChange={e => {
-                    if (e.target.value) setSelectedDate(e.target.value);
+                    if (e.target.value) selectDate(e.target.value);
                   }}
                 />
                 <button
                   className="icon-button"
                   aria-label={`Next ${unit}`}
-                  onClick={() => setSelectedDate(addDays(date, step))}
+                  onClick={() => selectDate(addDays(date, step))}
                 >
                   <Icon name="chevron" size={15} />
                 </button>
                 {date !== today && (
-                  <button className="today-button" onClick={() => setSelectedDate(null)}>
+                  <button className="today-button" onClick={() => selectDate(null)}>
                     Today
                   </button>
                 )}
               </div>
             )}
           </div>
-          {view === 'today' && <Board data={data} date={date} today={today} onSelect={setSelectedDate} />}
+          {view === 'today' && date <= today && (
+            <WritingWelcome
+              data={data}
+              date={date}
+              today={today}
+              onWrite={() => {
+                navigate('journal');
+                setWritingFocusDate(date);
+              }}
+              onSelect={selectDate}
+            />
+          )}
+          {view === 'today' && <Board data={data} date={date} today={today} onSelect={selectDate} />}
           {view === 'today' && (
             <Daily
               key={date}
               {...props}
               onPlanTomorrow={() => {
-                setSelectedDate(addDays(today, 1));
+                selectDate(addDays(date, 1));
                 navigate('today');
               }}
-              onSelectDate={setSelectedDate}
+              onSelectDate={selectDate}
               onNavigate={navigate}
             />
           )}
-          {view === 'journal' && <Journal {...props} onSelectDate={setSelectedDate} />}
+          {view === 'journal' && (
+            <Journal {...props} autoFocus={writingFocusDate === date} onSelectDate={selectDate} />
+          )}
           {view === 'trades' && <Trades {...props} />}
           {view === 'career' && <Career {...props} />}
           {view === 'review' && <Review {...props} />}

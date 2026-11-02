@@ -159,6 +159,7 @@ test('the board opens any day and shows where the challenge stands', async ({ pa
   await expect(page.locator('.board-cell')).toHaveCount(60);
   await expect(page.locator('h1')).toContainText('Day 9 of 60');
   await expect(page.locator('.board-today')).toHaveAttribute('aria-current', 'date');
+  await page.locator('.challenge-map summary').click();
   await page.getByRole('button', { name: /^Day 4,/ }).click();
   await expect(page.locator('h1')).toContainText('Day 4 of 60');
   await page.locator('.today-button').click();

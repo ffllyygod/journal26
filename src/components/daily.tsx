@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   applicationsThisWeek,
   bestStreak,
@@ -163,7 +163,7 @@ function Waiting({
   const shown = expanded ? items : items.slice(0, 3);
   return (
     <section className="panel waiting">
-      <h2>Waiting on you</h2>
+      <h2>When you have a moment</h2>
       <ul className="nudges">
         {shown.map(item => (
           <li key={item.key} className={item.urgent ? 'nudge-urgent' : ''}>
@@ -292,7 +292,7 @@ export function Daily({
             className="own-words priority"
             aria-label={`Priority ${index + 1}`}
             value={priority}
-            placeholder={index === 0 ? 'What has to happen for this day to count?' : 'And then?'}
+            placeholder={index === 0 ? 'What would you like to make room for?' : 'Anything else?'}
             maxLength={160}
             onChange={e =>
               patch({ priorities: day.priorities.map((p, i) => (index === i ? e.target.value : p)) })
@@ -483,7 +483,9 @@ export function Daily({
       <div className="daily-grid">
         <section className="day-loop" aria-label="Today's steps">
           <div className="day-loop-head">
-            <strong>{done === steps.length ? 'Day complete' : `${done} of ${steps.length} done`}</strong>
+            <strong aria-live="polite">
+              {done === steps.length ? 'Day complete. Room to rest.' : `${done} of ${steps.length} done`}
+            </strong>
             <span className="muted">
               {date === today && streak ? `${streak} day streak` : formatDate(date, { weekday: 'long' })}
             </span>
@@ -771,6 +773,7 @@ export function JournalEditor({
   demo,
   userId,
   future = false,
+  autoFocus = false,
 }: {
   day: DayEntry;
   patch: (value: Partial<DayEntry>) => void;
@@ -778,18 +781,66 @@ export function JournalEditor({
   demo: boolean;
   userId?: string;
   future?: boolean;
+  autoFocus?: boolean;
 }) {
+  const editor = useRef<HTMLTextAreaElement>(null);
+  const promptId = useId();
+  const [prompt, setPrompt] = useState(0);
+  const prompts = [
+    { label: 'Small win', question: 'What is one small thing you are glad you did?' },
+    { label: 'On my mind', question: 'What has been taking up space in your head?' },
+    { label: 'A moment', question: 'What is one moment from today you want to remember?' },
+    { label: 'Let it go', question: 'What can you leave on this page for tonight?' },
+  ];
+  const hasReflection = !!(day.journal.trim() || day.win.trim() || day.lesson.trim());
   return (
     <div className="journal-panel">
+      {!future && (
+        <div className="journal-prompts">
+          <p className="microcopy">Need a starting point? Pick a prompt, or write your own way.</p>
+          <div className="prompt-options" role="group" aria-label="Writing prompts">
+            {prompts.map((item, index) => (
+              <button
+                type="button"
+                key={item.label}
+                aria-pressed={prompt === index}
+                onClick={() => {
+                  setPrompt(index);
+                  editor.current?.focus();
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p id={promptId} className="prompt-question">
+            {prompts[prompt].question}
+          </p>
+        </div>
+      )}
       <textarea
+        ref={editor}
+        autoFocus={autoFocus}
         className="journal-textarea own-words"
         aria-label="Daily journal"
+        aria-describedby={future ? undefined : promptId}
         value={day.journal}
         onChange={e => patch({ journal: e.target.value })}
-        placeholder={future ? 'Notes for when you wake up' : 'What happened today?'}
+        placeholder={future ? 'Notes for when you wake up' : 'Start anywhere. A sentence is enough…'}
         rows={5}
         maxLength={30000}
       />
+      {!future && (
+        <p className={`writing-feedback ${hasReflection ? 'reflection-written' : ''}`} role="status">
+          {hasReflection ? (
+            <>
+              <Icon name="check" size={15} /> A reflection for this day. That counts.
+            </>
+          ) : (
+            'No minimum length. No perfect words.'
+          )}
+        </p>
+      )}
       <AttachmentGallery
         attachments={day.attachments}
         onChange={attachments => patch({ attachments })}
@@ -818,7 +869,7 @@ export function JournalEditor({
             </Field>
           </div>
           <div className="mood-row">
-            <span>Mood</span>
+            <span>How did the day feel?</span>
             <div role="group" aria-label="Daily mood">
               {['Rough', 'Low', 'Okay', 'Good', 'Great'].map((label, i) => (
                 <button
@@ -829,6 +880,9 @@ export function JournalEditor({
                   aria-pressed={day.mood === i + 1}
                   onClick={() => patch({ mood: day.mood === i + 1 ? null : i + 1 })}
                 >
+                  <span className="mood-face" aria-hidden="true">
+                    {['☁', '☂', '◒', '☀', '✺'][i]}
+                  </span>
                   {label}
                 </button>
               ))}
@@ -847,7 +901,8 @@ export function Journal({
   demo,
   userId,
   onSelectDate,
-}: FeatureProps & { onSelectDate: (date: string) => void }) {
+  autoFocus = false,
+}: FeatureProps & { onSelectDate: (date: string) => void; autoFocus?: boolean }) {
   const [query, setQuery] = useState('');
   const day = data.days[date] ?? emptyDay();
   const today = currentDay(data.settings);
@@ -890,6 +945,7 @@ export function Journal({
         <h2>{formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
         <JournalEditor
           key={date}
+          autoFocus={autoFocus}
           day={day}
           onAddAttachment={attachment =>
             update(current => {

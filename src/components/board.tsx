@@ -33,45 +33,54 @@ export function Board({
   const streak = loopStreak(data, today);
   return (
     <section className="board" aria-label="Challenge days">
-      <div className="board-grid">
-        {cells.map(cell => {
-          const name = formatDate(cell.key, { month: 'short', day: 'numeric' });
-          const state = cell.future
-            ? 'upcoming'
-            : `${cell.done} of 5 steps${cell.slipped ? ', slip logged' : ''}`;
-          return (
-            <button
-              key={cell.key}
-              type="button"
-              className={[
-                'board-cell',
-                cell.future ? 'board-future' : `board-level-${cell.done}`,
-                cell.key === today ? 'board-today' : '',
-                cell.key === date ? 'board-selected' : '',
-                cell.slipped ? 'board-slip' : '',
-              ].join(' ')}
-              aria-label={`Day ${cell.index + 1}, ${name}: ${state}`}
-              aria-current={cell.key === today ? 'date' : undefined}
-              title={`Day ${cell.index + 1}, ${name}: ${state}`}
-              onClick={() => onSelect(cell.key)}
-            >
-              {(cell.key === today || (cell.index + 1) % 10 === 0) && <span>{cell.index + 1}</span>}
-            </button>
-          );
-        })}
-      </div>
-      <p className="board-caption">
-        <span>
-          <strong>{fullDays}</strong> of {elapsed} {elapsed === 1 ? 'day' : 'days'} complete
-        </span>
-        <span>
-          <strong>{streak}</strong> day streak
-        </span>
-        <span>
-          <strong>{Math.max(0, duration - elapsed)}</strong> days left
-        </span>
-        <span className="board-key">Stronger color means more steps done. A red corner marks a slip.</span>
-      </p>
+      <details className="challenge-map">
+        <summary>
+          <span>Your {duration}-day challenge</span>
+          <span>
+            {fullDays} full routines <span aria-hidden="true">·</span> Explore days
+          </span>
+        </summary>
+        <div className="board-grid">
+          {cells.map(cell => {
+            const name = formatDate(cell.key, { month: 'short', day: 'numeric' });
+            const state = cell.future
+              ? 'upcoming'
+              : `${cell.done} of 5 steps${cell.slipped ? ', slip logged' : ''}`;
+            return (
+              <button
+                key={cell.key}
+                type="button"
+                className={[
+                  'board-cell',
+                  cell.future ? 'board-future' : `board-level-${cell.done}`,
+                  cell.key === today ? 'board-today' : '',
+                  cell.key === date ? 'board-selected' : '',
+                  cell.slipped ? 'board-slip' : '',
+                ].join(' ')}
+                aria-label={`Day ${cell.index + 1}, ${name}: ${state}`}
+                aria-current={cell.key === today ? 'date' : undefined}
+                aria-pressed={cell.key === date}
+                title={`Day ${cell.index + 1}, ${name}: ${state}`}
+                onClick={() => onSelect(cell.key)}
+              >
+                <span>{cell.index + 1}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="board-caption">
+          <span>
+            <strong>{fullDays}</strong> of {elapsed} {elapsed === 1 ? 'day' : 'days'} complete
+          </span>
+          <span>
+            <strong>{streak}</strong> full-routine streak
+          </span>
+          <span>
+            <strong>{Math.max(0, duration - elapsed)}</strong> days left
+          </span>
+          <span className="board-key">Stronger color means more steps done. A red corner marks a slip.</span>
+        </p>
+      </details>
     </section>
   );
 }

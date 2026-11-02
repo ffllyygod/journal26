@@ -1,7 +1,7 @@
 # Journal26: project status
 
 Shared reference for every agent and the owner. **Update this in the same commit as your work.**
-Last updated: 2026-11-02.
+Last updated: 2026-11-03.
 
 ## What this is
 
@@ -36,7 +36,8 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
-- Setup end-date preview follows the selected start date. Independent writing-progress logic counts reflection days without requiring a full routine, with targeted unit coverage; the UI integration follows in the next change.
+- Writing-first Today invitation, seven-day reflection trail independent of full routine completion, optional non-destructive writing prompts, expressive mood controls and gentle reflection feedback. Full challenge map is expandable with labelled 44px day buttons. On narrow screens, the active journal comes before entry history.
+- Date fixes: setup end-date preview follows the selected start date; planning from a historical entry opens its following day.
 - First-run setup: name, start date, habit names, reason and craving plan, before anything else
 - 60-square board: the challenge at a glance and the way to open any day
 - Focus timer per track or per task. Survives reloads, stored on the device only, and credits actual time exactly once (`logSession`)
@@ -93,7 +94,7 @@ After a week of real use, decide from what actually got used:
 | Habit labels default to neutral words in code | The repo is public; the owner sets personal wording in Settings, stored privately. |
 | `/demo` redirects once Supabase is configured | Real entries must not land in unsynced browser storage. |
 | Day starts at 3am by default | Late New York session journaling still belongs to that day. Editable. |
-| The board is the identity; everything else stays quiet | It carries real information and doubles as navigation. Blue ink on cool paper, dark at night. |
+| Writing leads; the full challenge map is expandable | Owner requested a warmer, more playful daily experience. A seven-day reflection trail acknowledges writing independently of completing all five routine steps. Keep full-routine scoring truthful. |
 | Serif means the owner wrote it | `.own-words` marks their words (journal, priorities, reasons). The interface speaks in the sans. |
 | Plain copy only | The first build's motivational taglines read as a template and got in the way. Say what a thing is or does. |
 | Patterns are rules, not AI | Private data stays out of third-party APIs, and every claim is a count that can be checked. They report what happened together, never a cause. |
@@ -115,6 +116,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 ## History
 
 - **Codex, 2026-11-02**: recorded product/design direction and the UX critique, added independent writing-progress logic with unit coverage, and corrected the setup end-date preview.
+- **Codex, 2026-11-03**: completed the daily experience improvements after the November 2 critique in `docs/UX_REVIEW.md`, then introduced the writing invitation, reflection trail, prompts, warm paper surface, flower motif and mood symbols. Fixed setup and historical planning dates. Verified lint, types, production build, 63 unit tests, 50 desktop/phone browser tests, and 11 mock-cloud tests. Committed on the product-rework branch; this iteration has not been deployed. Live service checks remain outstanding.
 - **Codex**: first build. Good design and data-safety instincts, but nothing was ever committed, lint and one test failed, `.sr-only` was never defined, and source was on single lines over 2,000 characters.
 - **Claude Code, 2026-11-02**: first production deploy to Vercel by CLI from the working tree, against the real Supabase project. All three test suites passed first; the live checks have not run.
 - **Codex, then Claude Code, 2026-11-02**: Codex left an uncommitted reskin plus sound fixes (task time credits, uploads that follow their date, documented open trades) that broke the build through type errors in its spec. Claude Code fixed that, then reworked the product after the owner said it felt like a demo: board, step sheet, focus timer, patterns, weekly change, trade flow, first-run setup, new visual system and plain copy.

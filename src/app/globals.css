@@ -1933,6 +1933,7 @@ textarea.own-words {
   .journal-index {
     position: static;
     max-height: 280px;
+    order: 1;
   }
   .analytics-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2089,5 +2090,298 @@ textarea.own-words {
   * {
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* A small daily ritual, with participation separate from routine completion. */
+:root {
+  --ritual-paper: oklch(97% 0.022 86);
+  --petal: oklch(83% 0.1 65);
+  --flower-center: oklch(93% 0.09 89);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ritual-paper: oklch(23% 0.018 80);
+    --petal: oklch(57% 0.09 65);
+    --flower-center: oklch(78% 0.09 89);
+  }
+}
+.writing-welcome {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 1fr);
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--ritual-paper);
+}
+.writing-invitation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 26px 28px;
+}
+.ritual-eyebrow {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.writing-invitation h2 {
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.ritual-description {
+  max-width: 39ch;
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: 14px;
+}
+.ritual-write {
+  margin-top: 18px;
+  min-height: 44px;
+  border-radius: 24px;
+}
+.ritual-flower {
+  width: 90px;
+  height: 124px;
+  flex: 0 0 90px;
+  color: var(--ink);
+  transform: rotate(-8deg);
+}
+.flower-head ellipse {
+  fill: var(--petal);
+  stroke: var(--ink);
+  stroke-width: 1.4px;
+}
+.flower-center {
+  fill: var(--flower-center);
+  stroke: var(--ink);
+  stroke-width: 1.4px;
+}
+.has-writing .flower-head {
+  transform-origin: 60px 55px;
+  animation: flower-hello 400ms ease-out both;
+}
+@keyframes flower-hello {
+  from {
+    transform: rotate(-18deg) scale(0.92);
+  }
+  to {
+    transform: rotate(0) scale(1);
+  }
+}
+.writing-trail {
+  align-self: center;
+  padding: 24px;
+  border-left: 1px solid var(--line);
+}
+.trail-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.trail-heading > span:first-child {
+  color: var(--ink);
+  font-weight: 650;
+}
+.trail-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.trail-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  min-height: 70px;
+  padding: 6px 0;
+  font-size: 11px;
+  color: var(--muted);
+  border-radius: 22px;
+  transition:
+    background 160ms ease-out,
+    transform 160ms ease-out;
+}
+.trail-day:hover {
+  background: var(--surface);
+  transform: translateY(-2px);
+}
+.trail-day[aria-pressed='true'] {
+  background: var(--surface);
+  outline: 1px solid var(--line-strong);
+}
+.trail-dot {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 50%;
+  font-size: 12px;
+}
+.written .trail-dot {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-style: solid;
+  border-color: var(--accent);
+}
+.trail-note {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.challenge-map {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+.challenge-map summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.challenge-map summary > span:first-child {
+  color: var(--ink);
+  font-weight: 650;
+  margin-right: 12px;
+}
+.challenge-map[open] summary {
+  margin-bottom: 12px;
+}
+.challenge-map .board-grid {
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  gap: 7px;
+}
+.challenge-map .board-cell {
+  min-height: 44px;
+  aspect-ratio: auto;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.journal-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.prompt-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.prompt-options button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 24px;
+  font-size: 13px;
+  transition:
+    background 160ms ease-out,
+    transform 160ms ease-out;
+}
+.prompt-options button:hover {
+  transform: translateY(-1px);
+  background: var(--sunk);
+}
+.prompt-options button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.prompt-question {
+  font-size: 17px;
+  font-weight: 550;
+  max-width: 55ch;
+}
+.journal-textarea {
+  padding: 16px;
+  line-height: 1.65;
+  background: var(--ritual-paper);
+  border-radius: 12px;
+}
+.writing-feedback {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.reflection-written {
+  color: var(--gain);
+}
+.mood-row button {
+  min-height: 58px;
+  min-width: 52px;
+  border-radius: 12px;
+}
+.mood-face {
+  display: block;
+  font-size: 23px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+@media (max-width: 1150px) {
+  .writing-welcome {
+    grid-template-columns: 1fr;
+  }
+  .writing-invitation {
+    justify-content: space-between;
+  }
+  .writing-trail {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+@media (max-width: 760px) {
+  .writing-invitation {
+    padding: 20px;
+    gap: 8px;
+  }
+  .writing-invitation h2 {
+    font-size: 24px;
+  }
+  .ritual-flower {
+    width: 66px;
+    height: 100px;
+    flex-basis: 66px;
+  }
+  .writing-trail {
+    padding: 16px 20px;
+  }
+  .trail-heading {
+    margin-bottom: 8px;
+  }
+  .trail-note {
+    margin-top: 8px;
+  }
+  .challenge-map summary > span {
+    display: inline-block;
+  }
+  .journal-index {
+    max-height: 180px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .has-writing .flower-head {
+    animation: none;
+  }
+  .trail-day,
+  .prompt-options button {
+    transition: none;
+  }
+  .trail-day:hover,
+  .prompt-options button:hover {
+    transform: none;
   }
 }
