@@ -100,6 +100,14 @@ export function mergeWorkspaces(
   local: Workspace,
   remote: Workspace,
 ): MergeResult<Workspace> {
+  // A restart replaces the complete journal. Never combine records from before and after it.
+  // Only a new local generation against an unchanged remote generation may win locally;
+  // otherwise the persisted generation wins, including competing restarts on two devices.
+  if (local.resetId !== remote.resetId) {
+    const localRestart = !!local.resetId && local.resetId !== base.resetId;
+    const remoteRestart = remote.resetId !== base.resetId;
+    return { value: localRestart && !remoteRestart ? local : remote, conflicts: ['resetId'] };
+  }
   const days = { ...base.days };
   // Only when both created it. A day on one device alone is a plain addition and must stay one.
   for (const date of Object.keys(local.days)) if (remote.days[date]) days[date] ??= emptyDay();
@@ -108,6 +116,7 @@ export function mergeWorkspaces(
 
 /** Turns a conflict path into a phrase the user recognises. */
 export function describeConflict(path: string): string {
+  if (path === 'resetId') return 'This journal was restarted or restored on another device';
   const [root, key, field] = path.split('.');
   if (root === 'days' && key) return `${key}${field ? ` · ${field}` : ''}`;
   if (root === 'settings') return `Settings · ${key}`;

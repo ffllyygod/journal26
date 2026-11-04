@@ -34,6 +34,12 @@ function errorMessage(error: unknown) {
   return 'Could not connect.';
 }
 
+function conflictMessage(paths: string[]) {
+  return paths.includes('resetId')
+    ? 'A challenge restart changed this journal. Older records have not been combined with the new challenge.'
+    : 'The same field was edited on two devices. Everything else has been combined.';
+}
+
 export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string }) {
   const [data, setData] = useState<Workspace | null>(null);
   const [status, setStatus] = useState<SaveStatus>('loading');
@@ -112,7 +118,7 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
         if (mounted.current) {
           setConflicts(paths);
           setStatus('conflict');
-          setError('The same field was edited on two devices. Everything else has been combined.');
+          setError(conflictMessage(paths));
         }
         return;
       }
@@ -162,12 +168,7 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
         if (!row) {
           await resolveStale(snapshot);
           failures.current = 0;
-          if (mounted.current)
-            setError(
-              blocked.current
-                ? 'The same field was edited on two devices. Everything else has been combined.'
-                : null,
-            );
+          if (mounted.current && !blocked.current) setError(null);
           return;
         }
         revision.current = row.revision;
@@ -279,14 +280,19 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
           resolved.current = merged.value;
           setConflicts(merged.conflicts);
           setStatus('conflict');
-          setError('The same field was edited on two devices. Everything else has been combined.');
+          setError(conflictMessage(merged.conflicts));
         } else {
           setStatus('saving');
           schedule(0);
         }
         return;
       }
-      if (draft) clearDraft();
+      if (draft) {
+        clearDraft();
+        if (draft.doc.resetId !== remote.resetId) {
+          setNotice('This challenge was restarted. An older device draft was not restored into it.');
+        }
+      }
       current.current = remote;
       editSequence.current = 0;
       savedSequence.current = 0;
@@ -324,6 +330,9 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
     // Anything typed during the fetch wins this race; the save path will merge it.
     if (!mounted.current || editSequence.current !== sequence || saving.current) return;
     const remote = normalizeWorkspace(row.document);
+    if (current.current?.resetId !== remote.resetId) {
+      setNotice('This challenge was restarted on another device. You are viewing the new challenge.');
+    }
     revision.current = row.revision;
     base.current = remote;
     current.current = remote;
@@ -384,7 +393,11 @@ export function useWorkspace({ demo, userId }: { demo: boolean; userId?: string 
       editSequence.current++;
       setData(next);
       setPending(true);
-      setNotice(null);
+      setNotice(
+        next.resetId !== base.current?.resetId
+          ? `Loaded ${Object.keys(next.days).length} days and ${next.trades.length} trades into this journal. Check the save status before closing.`
+          : null,
+      );
       if (!blocked.current) setStatus('saving');
       writeDraft();
       schedule(SAVE_DELAY);
