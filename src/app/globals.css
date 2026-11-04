@@ -2385,3 +2385,11 @@ textarea.own-words {
     transform: none;
   }
 }
+
+.restart-disclosure {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--loss);
+  font-weight: 600;
+}

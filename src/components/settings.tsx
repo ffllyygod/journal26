@@ -6,6 +6,7 @@ import { isWorkspace, normalizeWorkspace } from '@/lib/domain';
 import { buildReminderCalendar } from '@/lib/reminders';
 import { exportComplete, exportJson, exportMarkdown } from '@/lib/export';
 import { Field, Icon, SectionHeading } from './ui';
+import { RestartChallenge } from './restart-challenge';
 
 const lines = (value: FormDataEntryValue | null, separator: RegExp) =>
   String(value ?? '')
@@ -17,11 +18,10 @@ const optional = (value: FormDataEntryValue | null) => {
   return text === '' ? null : Number(text);
 };
 
-export function Settings({ data, update, demo }: FeatureProps) {
+export function Settings({ data, update, demo, canRestart = true }: FeatureProps & { canRestart?: boolean }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
-  const [restoreMessage, setRestoreMessage] = useState('');
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
@@ -88,7 +88,6 @@ export function Settings({ data, update, demo }: FeatureProps) {
   }
   async function restore(file: File | undefined) {
     if (!file) return;
-    setRestoreMessage('');
     setError('');
     try {
       const parsed: unknown = JSON.parse(await file.text());
@@ -102,8 +101,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
         )
       )
         return;
-      update(() => doc);
-      setRestoreMessage(`Restored ${summary}. Images stay where they are in storage.`);
+      update(() => ({ ...doc, resetId: crypto.randomUUID() }));
     } catch {
       setError('That file is not a Journal26 JSON backup. Nothing was changed.');
     }
@@ -321,6 +319,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
         </form>
       </section>
       <div className="stack">
+        <RestartChallenge data={data} update={update} canRestart={canRestart} />
         <section className="panel">
           <SectionHeading title="Backups" />
           <p className="section-description">
@@ -397,11 +396,7 @@ export function Settings({ data, update, demo }: FeatureProps) {
               }}
             />
           </label>
-          {restoreMessage && (
-            <p className="success-message" role="status">
-              {restoreMessage}
-            </p>
-          )}
+
         </section>
         {demo && (
           <section className="panel">

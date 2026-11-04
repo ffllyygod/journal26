@@ -53,6 +53,7 @@ export function Workspace({ demo = false, userId }: { demo?: boolean; userId?: s
     );
   return (
     <WorkspaceContent
+      key={store.data.resetId ?? 'original'}
       data={store.data}
       update={store.update}
       demo={demo}
@@ -250,7 +251,11 @@ function WorkspaceContent({
             <div className="save-alert" role="alert">
               <div>
                 <strong>
-                  {status === 'conflict' ? 'Two devices changed the same thing' : 'Not synced yet'}
+                  {status === 'conflict'
+                    ? conflicts.includes('resetId')
+                      ? 'A challenge restart changed this journal'
+                      : 'Two devices changed the same thing'
+                    : 'Not synced yet'}
                 </strong>
                 <p>{error || signOutError}</p>
                 {conflicts.length > 0 && (
@@ -272,7 +277,7 @@ function WorkspaceContent({
                     </button>
                     {conflicts.length > 0 && (
                       <button className="button button-primary button-small" onClick={keepMine}>
-                        Keep this device’s
+                        {conflicts.includes('resetId') ? 'Keep restarted version' : 'Keep this device’s'}
                       </button>
                     )}
                   </>
@@ -352,7 +357,7 @@ function WorkspaceContent({
           {view === 'trades' && <Trades {...props} />}
           {view === 'career' && <Career {...props} />}
           {view === 'review' && <Review {...props} />}
-          {view === 'settings' && <Settings {...props} />}
+          {view === 'settings' && <Settings {...props} canRestart={status === 'saved' && !pending} />}
         </main>
       </div>
       <UrgeButton data={data} update={update} today={today} />

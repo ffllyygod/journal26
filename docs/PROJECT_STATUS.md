@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Settings offers a typed-confirmation restart with a private JSON backup, pending-save guard, generation-aware focus sessions and backup restore. See docs/RESTART.md. Live reset still requires the owner's session.
 - Restart generations prevent cross-challenge merges; stale drafts and competing resets select a whole generation, with clear sync notices.
 - Restart transformation validates real dates, clears journal collections, retains preferences and creates a new generation ID.
 - Writing-first Today invitation, seven-day reflection trail independent of full routine completion, optional non-destructive writing prompts, expressive mood controls and gentle reflection feedback. Full challenge map is expandable with labelled 44px day buttons. On narrow screens, the active journal comes before entry history.
@@ -120,6 +121,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Settings offers a typed-confirmation restart with a private JSON backup, pending-save guard, generation-aware focus sessions and backup restore. See docs/RESTART.md. Live reset still requires the owner's session. Verified: Desktop/phone restart, backup, restore and timer tests; mock-cloud restart scenarios.
 - **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Restart generations prevent cross-challenge merges; stale drafts and competing resets select a whole generation, with clear sync notices. Verified: Restart merge unit tests and mock-cloud stale-device/offline-draft tests on the combined implementation.
 - **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Restart transformation validates real dates, clears journal collections, retains preferences and creates a new generation ID. Verified: Restart unit tests.
 - **Codex, 2026-11-03, production deployment**: deployed verified application commit `4a33056` with `vercel --prod --yes`. Vercel deployment `dpl_ELF65YXfVLWVBbxzrrZXVndW3aj6` is Ready and aliased to https://journal26.vercel.app. The production build passed; `/login` returned HTTP 200 and anonymous `/journal` redirected to `/login` (307). Authenticated live-service checks remain outstanding. Git integration is still not connected; future pushes do not automatically deploy.

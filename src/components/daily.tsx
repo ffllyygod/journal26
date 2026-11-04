@@ -204,7 +204,7 @@ export function Daily({
   const [moveTask, setMoveTask] = useState<Task | null>(null);
   const [moveDate, setMoveDate] = useState(addDays(date, 1));
   const [tradeEditor, setTradeEditor] = useState<{ trade: Trade | null } | null>(null);
-  const focus = useFocusSession();
+  const focus = useFocusSession(data.resetId);
 
   function toggleStep(id: StepId) {
     setOpenSteps(current => {

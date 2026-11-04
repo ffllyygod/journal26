@@ -4,6 +4,7 @@ import type { DayEntry } from './types.ts';
 export type FocusTrack = 'career' | 'trading';
 /** A running timer. Device-local: it is only ever stopped where it was started. */
 export type FocusSession = {
+  resetId?: string;
   track: FocusTrack;
   /** The journal day it started on, so a session crossing the day boundary credits that day. */
   date: string;

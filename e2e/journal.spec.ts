@@ -132,7 +132,7 @@ test('renaming a habit shows everywhere, and a backup restores', async ({ page }
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(backup)),
   });
-  await expect(page.getByRole('status').filter({ hasText: 'Restored 9 days' })).toBeVisible();
+  await expect(page.locator('.sync-notice').filter({ hasText: 'Loaded 9 days' })).toBeVisible();
   await saved(page);
   await page.reload();
   await openStep(page, 'Check-in');

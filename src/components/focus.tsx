@@ -22,12 +22,15 @@ function readSession(): FocusSession | null {
 }
 
 /** Survives reloads and tab switches, because phones kill background tabs during real work. */
-export function useFocusSession() {
-  const [session, setSession] = useState<FocusSession | null>(readSession);
+export function useFocusSession(resetId?: string) {
+  const [session, setSession] = useState<FocusSession | null>(() => {
+    const stored = readSession();
+    return stored?.resetId === resetId ? stored : null;
+  });
   return {
     session,
     start(next: Omit<FocusSession, 'startedAt'>) {
-      const value = { ...next, startedAt: Date.now() };
+      const value = { ...next, resetId, startedAt: Date.now() };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
       setSession(value);
     },
