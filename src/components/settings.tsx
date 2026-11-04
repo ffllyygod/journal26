@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import type { FeatureProps, Settings as SettingsType } from '@/lib/types';
-import { isWorkspace, normalizeWorkspace } from '@/lib/domain';
+import { addDays, formatDate, isWorkspace, normalizeWorkspace } from '@/lib/domain';
+import { isRestartDate } from '@/lib/restart';
 import { buildReminderCalendar } from '@/lib/reminders';
 import { exportComplete, exportJson, exportMarkdown } from '@/lib/export';
 import { Field, Icon, SectionHeading } from './ui';
@@ -22,6 +23,10 @@ export function Settings({ data, update, demo, canRestart = true }: FeatureProps
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [startDate, setStartDate] = useState(data.settings.startDate);
+  const [duration, setDuration] = useState(String(data.settings.duration));
+  const validDuration =
+    Number.isInteger(Number(duration)) && Number(duration) >= 7 && Number(duration) <= 366;
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
@@ -124,7 +129,8 @@ export function Settings({ data, update, demo, canRestart = true }: FeatureProps
               <input
                 name="startDate"
                 type="date"
-                defaultValue={data.settings.startDate}
+                value={startDate}
+                onChange={event => setStartDate(event.target.value)}
                 required
                 min="2020-01-01"
                 max="2100-12-31"
@@ -136,11 +142,17 @@ export function Settings({ data, update, demo, canRestart = true }: FeatureProps
                 type="number"
                 min="7"
                 max="366"
-                defaultValue={data.settings.duration}
+                value={duration}
+                onChange={event => setDuration(event.target.value)}
                 required
               />
             </Field>
           </div>
+          <p className="microcopy" role="status">
+            {isRestartDate(startDate) && validDuration
+              ? `Your ${duration}-day challenge ends ${formatDate(addDays(startDate, Number(duration) - 1), { month: 'long', day: 'numeric', year: 'numeric' })}. Changing these dates keeps your entries.`
+              : 'Choose a valid start date and a challenge length from 7 to 366 days.'}
+          </p>
           <Field label="Why you are doing this">
             <textarea
               className="own-words"
@@ -396,7 +408,6 @@ export function Settings({ data, update, demo, canRestart = true }: FeatureProps
               }}
             />
           </label>
-
         </section>
         {demo && (
           <section className="panel">
