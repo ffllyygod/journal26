@@ -205,6 +205,9 @@ export function isWorkspace(value: unknown): value is Workspace {
   const v = value as Partial<Workspace>;
   return (
     v.version === 1 &&
+    (v.resetId === undefined ||
+      (typeof v.resetId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.resetId))) &&
     !!v.settings &&
     typeof v.settings.startDate === 'string' &&
     !!v.days &&

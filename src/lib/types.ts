@@ -95,6 +95,8 @@ export type Urge = {
 };
 export type Workspace = {
   version: 1;
+  /** A new generation for each intentional restart or full restore; legacy journals omit it. */
+  resetId?: string;
   settings: Settings;
   days: Record<string, DayEntry>;
   trades: Trade[];

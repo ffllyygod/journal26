@@ -1,7 +1,7 @@
 # Journal26: project status
 
 Shared reference for every agent and the owner. **Update this in the same commit as your work.**
-Last updated: 2026-11-03.
+Last updated: 2026-11-06.
 
 ## What this is
 
@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Restart transformation validates real dates, clears journal collections, retains preferences and creates a new generation ID.
 - Writing-first Today invitation, seven-day reflection trail independent of full routine completion, optional non-destructive writing prompts, expressive mood controls and gentle reflection feedback. Full challenge map is expandable with labelled 44px day buttons. On narrow screens, the active journal comes before entry history.
 - Date fixes: setup end-date preview follows the selected start date; planning from a historical entry opens its following day.
 - First-run setup: name, start date, habit names, reason and craving plan, before anything else
@@ -63,6 +64,8 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 The Supabase project exists and the app is deployed to Vercel, but the mock still proves app logic only. **Not yet verified live:** RLS isolation between users, Storage policies, image upload and signed URLs, password-reset email. Run the "Required live checks" in `docs/SETUP.md`, then move these up.
 
 ### Left to do
+
+- **Requested November 6 restart:** live deletion is still pending authenticated access. Public configuration cannot erase private records. Deploying the new restart control does not itself reset the journal.
 
 Blocked on the owner:
 
@@ -106,6 +109,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## Known risks
 
+- Restart protection applies to updated clients. Close/reload old app tabs before restarting; old deployed clients do not understand reset generations. Physical Storage image files are retained for backup recovery.
 - **The repo is public** under the owner's GitHub account during a job search. It holds code only, no entries, but the owner may prefer private. Vercel works with private repos.
 - **Supabase free projects pause after about a week without activity.** Daily use prevents it; a long gap needs a manual restore from the dashboard.
 - **No automatic database backups on the free tier.** Exports are the only backup; the app nudges weekly.
@@ -115,6 +119,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Restart transformation validates real dates, clears journal collections, retains preferences and creates a new generation ID. Verified: Restart unit tests.
 - **Codex, 2026-11-03, production deployment**: deployed verified application commit `4a33056` with `vercel --prod --yes`. Vercel deployment `dpl_ELF65YXfVLWVBbxzrrZXVndW3aj6` is Ready and aliased to https://journal26.vercel.app. The production build passed; `/login` returned HTTP 200 and anonymous `/journal` redirected to `/login` (307). Authenticated live-service checks remain outstanding. Git integration is still not connected; future pushes do not automatically deploy.
 - **Codex, 2026-11-02**: recorded product/design direction and the UX critique, added independent writing-progress logic with unit coverage, and corrected the setup end-date preview.
 - **Codex, 2026-11-03**: completed the daily experience improvements after the November 2 critique in `docs/UX_REVIEW.md`, then introduced the writing invitation, reflection trail, prompts, warm paper surface, flower motif and mood symbols. Fixed setup and historical planning dates. Verified lint, types, production build, 63 unit tests, 50 desktop/phone browser tests, and 11 mock-cloud tests. Merged into main and deployed to production on November 3 (see deployment entry below). Live service checks remain outstanding.
