@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Writing trails exclude dates outside the challenge and recognize meaningful reflection milestones without requiring perfect routines.
 - Focused writing hides history and extra fields; Escape restores the full journal without losing edits.
 - Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text.
 - Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states.
@@ -125,6 +126,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing trails exclude dates outside the challenge and recognize meaningful reflection milestones without requiring perfect routines. Verified: npm run check: lint, types, 83 unit tests, build; npm run test:e2e: 64 passed; npm run test:cloud: 13 passed.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Focused writing hides history and extra fields; Escape restores the full journal without losing edits. Verified: Desktop/phone focus-mode, autosave and Escape tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text. Verified: Prompt unit and desktop/phone browser tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states. Verified: Journal-history unit and desktop/phone browser tests.

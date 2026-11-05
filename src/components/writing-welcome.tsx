@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@/lib/domain';
+import { addDays, formatDate } from '@/lib/domain';
 import { writingProgress } from '@/lib/journaling';
 import type { Workspace } from '@/lib/types';
 import { Icon } from './ui';
@@ -18,7 +18,8 @@ export function WritingWelcome({
   onWrite: () => void;
   onSelect: (date: string) => void;
 }) {
-  const progress = writingProgress(data.days, today);
+  const progress = writingProgress(data.days, today, data.settings.startDate, data.settings.duration);
+  const challengeEnd = addDays(data.settings.startDate, data.settings.duration - 1);
   const day = data.days[date];
   const written = !!day && !!(day.journal.trim() || day.win.trim() || day.lesson.trim());
   const recentCount = progress.recent.filter(day => day.written).length;
@@ -74,7 +75,8 @@ export function WritingWelcome({
             <button
               key={item.date}
               className={`trail-day ${item.written ? 'written' : ''}`}
-              aria-label={`${formatDate(item.date, { month: 'short', day: 'numeric' })}: ${item.written ? 'reflection written' : 'no reflection yet'}`}
+              disabled={item.date < data.settings.startDate || item.date > challengeEnd}
+              aria-label={`${formatDate(item.date, { month: 'short', day: 'numeric' })}: ${item.date < data.settings.startDate || item.date > challengeEnd ? 'outside this challenge' : item.written ? 'reflection written' : 'no reflection yet'}`}
               aria-pressed={item.date === date}
               onClick={() => onSelect(item.date)}
             >
@@ -90,6 +92,14 @@ export function WritingWelcome({
             ? `${progress.total} ${progress.total === 1 ? 'day' : 'days'} with a reflection. Every return counts.`
             : 'Your first line starts the trail. No catching up required.'}
         </p>
+        {progress.milestone > 0 && (
+          <p className="writing-milestone">
+            <Icon name="leaf" size={15} />
+            {progress.milestone === 1
+              ? 'Your first reflection. A beginning worth keeping.'
+              : `${progress.milestone} writing days reached. Look how much you have noticed.`}
+          </p>
+        )}
       </div>
     </section>
   );

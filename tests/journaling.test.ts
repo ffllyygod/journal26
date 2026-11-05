@@ -35,3 +35,20 @@ test('journal, win and lesson count once per day without requiring other steps',
     ['2026-10-30', '2026-10-31', '2026-11-01'],
   );
 });
+
+test('a new challenge excludes older and out-of-range writing from its trail and milestones', () => {
+  const days = Object.fromEntries(
+    Array.from({ length: 12 }, (_, index) => [
+      `2026-11-${String(index + 1).padStart(2, '0')}`,
+      { ...emptyDay(), journal: 'A reflection' },
+    ]),
+  );
+  const restarted = writingProgress(days, '2026-11-06', '2026-11-06', 7);
+  assert.equal(restarted.total, 1);
+  assert.equal(restarted.milestone, 1);
+  assert.equal(restarted.recent.filter(day => day.written).length, 1);
+  const finished = writingProgress(days, '2026-11-20', '2026-11-06', 7);
+  assert.equal(finished.total, 7);
+  assert.equal(finished.milestone, 7);
+  assert.equal(finished.recent.filter(day => day.written).length, 0);
+});
