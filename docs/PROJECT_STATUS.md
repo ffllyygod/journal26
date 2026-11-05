@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text.
 - Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states.
 - Settings previews the inclusive end date as start and duration change; changing preferences preserves existing entries.
 - Settings offers a typed-confirmation restart with a private JSON backup, pending-save guard, generation-aware focus sessions and backup restore. See docs/RESTART.md. Live reset still requires the owner's session.
@@ -123,6 +124,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text. Verified: Prompt unit and desktop/phone browser tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states. Verified: Journal-history unit and desktop/phone browser tests.
 - **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Settings previews the inclusive end date as start and duration change; changing preferences preserves existing entries. Verified: Desktop and phone preference-preview tests.
 - **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Settings offers a typed-confirmation restart with a private JSON backup, pending-save guard, generation-aware focus sessions and backup restore. See docs/RESTART.md. Live reset still requires the owner's session. Verified: Desktop/phone restart, backup, restore and timer tests; mock-cloud restart scenarios.

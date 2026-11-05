@@ -28,6 +28,7 @@ import { AttachmentGallery } from './attachments';
 import { FocusPanel, useFocusSession } from './focus';
 import { InsightItem } from './patterns';
 import { JournalHistory } from './journal-history';
+import { WritingPrompts } from './writing-prompts';
 import { TradeEditor, upsertTrade } from './trades';
 import { Field, Icon, Modal } from './ui';
 
@@ -407,6 +408,7 @@ export function Daily({
   const journal = (
     <JournalEditor
       key={date}
+      date={date}
       day={day}
       patch={patch}
       onAddAttachment={attachment =>
@@ -768,6 +770,7 @@ export function Daily({
 }
 
 export function JournalEditor({
+  date,
   day,
   patch,
   onAddAttachment,
@@ -776,6 +779,7 @@ export function JournalEditor({
   future = false,
   autoFocus = false,
 }: {
+  date: string;
   day: DayEntry;
   patch: (value: Partial<DayEntry>) => void;
   onAddAttachment: (attachment: Attachment) => void;
@@ -786,38 +790,11 @@ export function JournalEditor({
 }) {
   const editor = useRef<HTMLTextAreaElement>(null);
   const promptId = useId();
-  const [prompt, setPrompt] = useState(0);
-  const prompts = [
-    { label: 'Small win', question: 'What is one small thing you are glad you did?' },
-    { label: 'On my mind', question: 'What has been taking up space in your head?' },
-    { label: 'A moment', question: 'What is one moment from today you want to remember?' },
-    { label: 'Let it go', question: 'What can you leave on this page for tonight?' },
-  ];
   const hasReflection = !!(day.journal.trim() || day.win.trim() || day.lesson.trim());
   return (
     <div className="journal-panel">
       {!future && (
-        <div className="journal-prompts">
-          <p className="microcopy">Need a starting point? Pick a prompt, or write your own way.</p>
-          <div className="prompt-options" role="group" aria-label="Writing prompts">
-            {prompts.map((item, index) => (
-              <button
-                type="button"
-                key={item.label}
-                aria-pressed={prompt === index}
-                onClick={() => {
-                  setPrompt(index);
-                  editor.current?.focus();
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <p id={promptId} className="prompt-question">
-            {prompts[prompt].question}
-          </p>
-        </div>
+        <WritingPrompts date={date} onChoose={() => editor.current?.focus()} descriptionId={promptId} />
       )}
       <textarea
         ref={editor}
@@ -913,6 +890,7 @@ export function Journal({
         <h2>{formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
         <JournalEditor
           key={date}
+          date={date}
           autoFocus={autoFocus}
           day={day}
           onAddAttachment={attachment =>
