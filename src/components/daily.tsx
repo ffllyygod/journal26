@@ -27,6 +27,7 @@ import { moveDayTasks, replaceDayTasks, toggleDayTask } from '@/lib/task-operati
 import { AttachmentGallery } from './attachments';
 import { FocusPanel, useFocusSession } from './focus';
 import { InsightItem } from './patterns';
+import { JournalHistory } from './journal-history';
 import { TradeEditor, upsertTrade } from './trades';
 import { Field, Icon, Modal } from './ui';
 
@@ -903,44 +904,11 @@ export function Journal({
   onSelectDate,
   autoFocus = false,
 }: FeatureProps & { onSelectDate: (date: string) => void; autoFocus?: boolean }) {
-  const [query, setQuery] = useState('');
   const day = data.days[date] ?? emptyDay();
   const today = currentDay(data.settings);
-  const entries = Object.entries(data.days)
-    .filter(
-      ([, d]) =>
-        (d.journal || d.win || d.lesson || d.attachments.length) &&
-        `${d.journal} ${d.win} ${d.lesson}`.toLowerCase().includes(query.toLowerCase()),
-    )
-    .sort(([a], [b]) => b.localeCompare(a));
   return (
     <div className="journal-layout">
-      <aside className="panel journal-index">
-        <div className="search-field">
-          <Icon name="search" size={17} />
-          <input
-            aria-label="Search journal"
-            placeholder="Search entries"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-        </div>
-        <p className="muted">{entries.length} entries</p>
-        {entries.length ? (
-          entries.map(([key, d]) => (
-            <button
-              className={`journal-index-item ${date === key ? 'active' : ''}`}
-              key={key}
-              onClick={() => onSelectDate(key)}
-            >
-              <strong>{formatDate(key, { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
-              <span>{d.journal || d.win || d.lesson || 'Images only'}</span>
-            </button>
-          ))
-        ) : (
-          <p className="muted">{query ? 'No matching entries.' : 'Nothing written yet.'}</p>
-        )}
-      </aside>
+      <JournalHistory data={data} date={date} onSelectDate={onSelectDate} />
       <section className="panel">
         <h2>{formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
         <JournalEditor

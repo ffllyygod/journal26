@@ -2393,3 +2393,17 @@ textarea.own-words {
   color: var(--loss);
   font-weight: 600;
 }
+
+.journal-index > h2,
+.journal-index > .field,
+.journal-index > .check-line {
+  margin-bottom: 12px;
+}
+.journal-index .split {
+  margin: 12px 0;
+}
+@media (max-width: 1040px) {
+  .journal-index {
+    max-height: min(440px, 65vh);
+  }
+}
