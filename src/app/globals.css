@@ -2407,3 +2407,27 @@ textarea.own-words {
     max-height: min(440px, 65vh);
   }
 }
+
+.writing-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.journal-extras:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.journal-layout:has(.writing-focused) {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 900px;
+  margin-inline: auto;
+}
+.journal-layout:has(.writing-focused) .journal-index {
+  display: none;
+}
+.writing-focused .journal-textarea {
+  min-height: 45vh;
+}

@@ -36,6 +36,7 @@ The Today screen is a sheet of five steps that opens on whatever is next. A day 
 
 ### Done and tested
 
+- Focused writing hides history and extra fields; Escape restores the full journal without losing edits.
 - Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text.
 - Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states.
 - Settings previews the inclusive end date as start and duration change; changing preferences preserves existing entries.
@@ -124,6 +125,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Focused writing hides history and extra fields; Escape restores the full journal without losing edits. Verified: Desktop/phone focus-mode, autosave and Escape tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text. Verified: Prompt unit and desktop/phone browser tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Journal history filters by words/date, mood and photos; includes mood-only entries and clear empty/result states. Verified: Journal-history unit and desktop/phone browser tests.
 - **Codex, implemented 2026-11-06; commit dated November 4 at owner request**: Settings previews the inclusive end date as start and duration change; changing preferences preserves existing entries. Verified: Desktop and phone preference-preview tests.

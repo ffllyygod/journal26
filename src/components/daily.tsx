@@ -790,9 +790,34 @@ export function JournalEditor({
 }) {
   const editor = useRef<HTMLTextAreaElement>(null);
   const promptId = useId();
+  const [focused, setFocused] = useState(false);
   const hasReflection = !!(day.journal.trim() || day.win.trim() || day.lesson.trim());
   return (
-    <div className="journal-panel">
+    <div
+      className={`journal-panel ${focused ? 'writing-focused' : ''}`}
+      onKeyDown={event => {
+        if (event.key === 'Escape' && focused) {
+          setFocused(false);
+          editor.current?.focus();
+        }
+      }}
+    >
+      <div className="writing-toolbar">
+        <span className="microcopy">
+          {focused ? 'Just you and the page. Esc to return.' : 'Make a little room for your thoughts.'}
+        </span>
+        <button
+          type="button"
+          className="button button-secondary button-small"
+          aria-pressed={focused}
+          onClick={() => {
+            setFocused(value => !value);
+            editor.current?.focus();
+          }}
+        >
+          {focused ? 'Show full journal' : 'Focus on writing'}
+        </button>
+      </div>
       {!future && (
         <WritingPrompts date={date} onChoose={() => editor.current?.focus()} descriptionId={promptId} />
       )}
@@ -819,55 +844,57 @@ export function JournalEditor({
           )}
         </p>
       )}
-      <AttachmentGallery
-        attachments={day.attachments}
-        onChange={attachments => patch({ attachments })}
-        onAdd={onAddAttachment}
-        demo={demo}
-        userId={userId}
-      />
-      {!future && (
-        <>
-          <div className="journal-reflections">
-            <Field label="One win">
-              <input
-                className="own-words"
-                value={day.win}
-                onChange={e => patch({ win: e.target.value })}
-                maxLength={500}
-              />
-            </Field>
-            <Field label="One lesson">
-              <input
-                className="own-words"
-                value={day.lesson}
-                onChange={e => patch({ lesson: e.target.value })}
-                maxLength={500}
-              />
-            </Field>
-          </div>
-          <div className="mood-row">
-            <span>How did the day feel?</span>
-            <div role="group" aria-label="Daily mood">
-              {['Rough', 'Low', 'Okay', 'Good', 'Great'].map((label, i) => (
-                <button
-                  type="button"
-                  key={label}
-                  className={day.mood === i + 1 ? 'selected' : ''}
-                  aria-label={`Mood: ${label}`}
-                  aria-pressed={day.mood === i + 1}
-                  onClick={() => patch({ mood: day.mood === i + 1 ? null : i + 1 })}
-                >
-                  <span className="mood-face" aria-hidden="true">
-                    {['☁', '☂', '◒', '☀', '✺'][i]}
-                  </span>
-                  {label}
-                </button>
-              ))}
+      <div className="journal-extras" hidden={focused}>
+        <AttachmentGallery
+          attachments={day.attachments}
+          onChange={attachments => patch({ attachments })}
+          onAdd={onAddAttachment}
+          demo={demo}
+          userId={userId}
+        />
+        {!future && (
+          <>
+            <div className="journal-reflections">
+              <Field label="One win">
+                <input
+                  className="own-words"
+                  value={day.win}
+                  onChange={e => patch({ win: e.target.value })}
+                  maxLength={500}
+                />
+              </Field>
+              <Field label="One lesson">
+                <input
+                  className="own-words"
+                  value={day.lesson}
+                  onChange={e => patch({ lesson: e.target.value })}
+                  maxLength={500}
+                />
+              </Field>
             </div>
-          </div>
-        </>
-      )}
+            <div className="mood-row">
+              <span>How did the day feel?</span>
+              <div role="group" aria-label="Daily mood">
+                {['Rough', 'Low', 'Okay', 'Good', 'Great'].map((label, i) => (
+                  <button
+                    type="button"
+                    key={label}
+                    className={day.mood === i + 1 ? 'selected' : ''}
+                    aria-label={`Mood: ${label}`}
+                    aria-pressed={day.mood === i + 1}
+                    onClick={() => patch({ mood: day.mood === i + 1 ? null : i + 1 })}
+                  >
+                    <span className="mood-face" aria-hidden="true">
+                      {['☁', '☂', '◒', '☀', '✺'][i]}
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
