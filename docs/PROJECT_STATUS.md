@@ -126,6 +126,7 @@ Trade execution, signals, live price feeds, social features, multi-user, paid se
 
 ## History
 
+- **Codex, 2026-11-06, production deployment**: deployed application commit `8e9f24f` to https://journal26.vercel.app as `dpl_6DdjnZhgZsHc8Fazy2sacKh2JsYA`. Initial implicit-scope deployment was rejected; explicit `--scope ffllyygod-gmailcoms-projects` succeeded. Production build is Ready, login returned 200, and private journal redirected to login (307). Eight feature commits were allocated four each to November 4 and 5 as requested. The live journal has **not** been reset: the owner must use the signed-in restart control or supply secure authenticated access.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing trails exclude dates outside the challenge and recognize meaningful reflection milestones without requiring perfect routines. Verified: npm run check: lint, types, 83 unit tests, build; npm run test:e2e: 64 passed; npm run test:cloud: 13 passed.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Focused writing hides history and extra fields; Escape restores the full journal without losing edits. Verified: Desktop/phone focus-mode, autosave and Escape tests.
 - **Codex, implemented 2026-11-06; commit dated November 5 at owner request**: Writing prompts rotate deterministically by calendar date and offer another prompt without inserting or replacing journal text. Verified: Prompt unit and desktop/phone browser tests.
